@@ -35,7 +35,6 @@ class AppCachedImage extends StatelessWidget {
     this.placeholderTextColor,
   });
 
-  /// Helper to get the correct absolute URL from a path
   static String getFormattedUrl(String? url) {
     if (url == null || url.isEmpty) return '';
 
@@ -44,14 +43,26 @@ class AppCachedImage extends StatelessWidget {
 
     String formattedUrl;
     if (url.startsWith('http')) {
-      formattedUrl = url.replaceFirst('http://88.222.245.145:4000', 'https://toolucs.com');
-      if (formattedUrl.startsWith('http://')) {
+      // If the database has hardcoded old URLs, point them to the current base
+      final String baseWithoutSlash = ApiConstants.baseUrl2.endsWith('/')
+          ? ApiConstants.baseUrl2.substring(0, ApiConstants.baseUrl2.length - 1)
+          : ApiConstants.baseUrl2;
+          
+      formattedUrl = url.replaceFirst('http://88.222.245.145:4000', baseWithoutSlash);
+      formattedUrl = formattedUrl.replaceFirst('https://toolucs.com', baseWithoutSlash);
+      formattedUrl = formattedUrl.replaceFirst('https://toolbocs.apluscrm.in', baseWithoutSlash);
+      formattedUrl = formattedUrl.replaceFirst('http://toolbocs.apluscrm.in', baseWithoutSlash);
+      
+      if (formattedUrl.startsWith('http://') && !formattedUrl.contains('localhost') && !formattedUrl.contains('127.0.0.1')) {
         formattedUrl = formattedUrl.replaceFirst('http://', 'https://');
       }
     } else {
-      // Remove leading slash if present to avoid double slashes
+      // Ensure exactly one slash between base and path
+      final base = ApiConstants.baseUrl2.endsWith('/') 
+          ? ApiConstants.baseUrl2 
+          : '${ApiConstants.baseUrl2}/';
       final path = url.startsWith('/') ? url.substring(1) : url;
-      formattedUrl = '${ApiConstants.baseUrl2}$path';
+      formattedUrl = '$base$path';
     }
 
     // Attempt to parse the URL. If it succeeds, it will automatically encode spaces.

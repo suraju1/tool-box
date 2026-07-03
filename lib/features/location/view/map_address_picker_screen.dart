@@ -12,12 +12,14 @@ import 'package:tool_bocs/features/address/controller/address_controller.dart';
 import 'package:tool_bocs/features/address/model/address_model.dart';
 import 'dart:math' as math;
 import 'package:geocoding/geocoding.dart' as geo;
+import 'package:geolocator/geolocator.dart';
 
 class MapAddressPickerScreen extends StatefulWidget {
   final bool isPickOnly;
   final AddressModel? editAddress;
+  final double? initialRadius;
   const MapAddressPickerScreen(
-      {super.key, this.isPickOnly = false, this.editAddress});
+      {super.key, this.isPickOnly = false, this.editAddress, this.initialRadius});
 
   @override
   State<MapAddressPickerScreen> createState() => _MapAddressPickerScreenState();
@@ -40,7 +42,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   double _radius = 5.0; // km
   String get formattedRadius {
     if (_radius < 1) {
-      return '${(_radius * 1000).toInt()} meters';
+      return '${(_radius * 1000).toStringAsFixed(1)} m';
     }
 
     return '${_radius.toStringAsFixed(1)} km';
@@ -58,6 +60,9 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialRadius != null) {
+      _radius = widget.initialRadius!;
+    }
     _currentZoom = _getZoomForRadius(_radius);
     _isDefault = widget.editAddress?.isDefault == 1;
     if (widget.editAddress != null) {
@@ -124,10 +129,52 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isFetchingLocation = true);
+
+    bool serviceEnabled = await LocationService.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        setState(() => _isFetchingLocation = false);
+        bool? openSettings = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                'Enable Location',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Text('Your system location services are disabled. Please enable them to fetch your current location.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primaryColor,
+                    foregroundColor: context.onPrimaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text('Open Settings'),
+                ),
+              ],
+            );
+          },
+        );
+        if (openSettings == true) {
+          await Geolocator.openLocationSettings();
+        }
+      }
+      return;
+    }
+
     final success = await context.read<LocationController>().fetchLocation();
     if (success && mounted) {
       final loc = context.read<LocationController>();
-      _updateLocalLocation(LatLng(loc.latitude!, loc.longitude!), loc.address!);
+      if (loc.latitude != null && loc.longitude != null) {
+        _updateLocalLocation(LatLng(loc.latitude!, loc.longitude!), loc.address ?? "");
+      }
     }
     if (mounted) setState(() => _isFetchingLocation = false);
   }
@@ -171,6 +218,23 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     } finally {
       if (mounted) setState(() => _isReverseGeocoding = false);
     }
+  }
+
+  String _getShortAddressName(String fullAddress) {
+    if (fullAddress.isEmpty) return "Location";
+    final parts = fullAddress.split(',');
+    for (var part in parts) {
+      final trimmed = part.trim();
+      // Skip if it contains only numbers and special characters/spaces (like "1143")
+      if (trimmed.isNotEmpty && !RegExp(r'^[\d\s\W]+$').hasMatch(trimmed)) {
+        // Also skip short alphanumeric blocks that are likely house/flat numbers (e.g. "12A")
+        if (trimmed.length <= 3 && RegExp(r'\d').hasMatch(trimmed)) {
+          continue;
+        }
+        return trimmed;
+      }
+    }
+    return parts.first.trim();
   }
 
   @override
@@ -257,12 +321,13 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
               child: Slider(
                 value: _radius,
                 min: 0.01,
-                max: 50,
+                max: 10.0,
                 activeColor: context.primaryColor,
                 inactiveColor: context.dividerColor,
                 onChanged: (val) {
                   setState(() => _radius = val);
                   _updateCameraZoom(val);
+                  context.read<LocationController>().setRadius(val);
                 },
               ),
             ),
@@ -416,7 +481,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                         ],
                       ),
                       child: Text(
-                        _currentAddress.split(',').first,
+                        _getShortAddressName(_currentAddress),
                         style: TextStyle(
                           color: Colors.black87,
                           fontSize: 13.sp,
@@ -658,7 +723,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _currentAddress.split(',').first,
+                      _getShortAddressName(_currentAddress),
                       style: TextStyle(
                           fontSize: 16.sp, fontWeight: FontWeight.bold),
                       maxLines: 1,
@@ -739,14 +804,23 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   }
 
   void _onDirectSave() {
+    if (_selectedLabel == 'Other' &&
+        _customLabelController.text.trim().isEmpty) {
+      ToastService.showErrorToast(context, 'Please enter a custom label');
+      return;
+    }
+
     final addressController = context.read<AddressController>();
     String finalLabel = _selectedLabel.toLowerCase();
+    String finalAddress = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
+        ? "${_customLabelController.text.trim()} - $_currentAddress"
+        : _currentAddress;
 
     if (widget.editAddress != null) {
       final updatedAddress = AddressModel(
         id: widget.editAddress!.id,
         label: finalLabel,
-        address: _currentAddress,
+        address: finalAddress,
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: 1,
@@ -772,7 +846,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     } else {
       final newAddress = AddressModel(
         label: finalLabel,
-        address: _currentAddress,
+        address: finalAddress,
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: addressController.addresses.isEmpty ? 1 : 0,
@@ -883,59 +957,71 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   }
 
   Widget _buildLabelSelector() {
-    final labels = ['Home', 'Work', 'Office', 'Hotel', 'Other'];
+    final labels = ['Home', 'Work', 'Hotel', 'Other'];
     final icons = [
       Icons.home_outlined,
       Icons.work_outline,
-      Icons.business_outlined,
       Icons.hotel_outlined,
       Icons.location_on_outlined
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(labels.length, (index) {
-          final isSelected = _selectedLabel == labels[index];
-          return Padding(
-            padding: EdgeInsets.only(right: 10.w),
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedLabel = labels[index];
-                });
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? context.primaryColor.withOpacity(0.1)
-                      : context.surfaceColor,
-                  border: Border.all(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(labels.length, (index) {
+              final isSelected = _selectedLabel == labels[index];
+              return Padding(
+                padding: EdgeInsets.only(right: 10.w),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedLabel = labels[index];
+                      if (_selectedLabel != 'Other') {
+                        _customLabelController.clear();
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                    decoration: BoxDecoration(
                       color: isSelected
-                          ? context.primaryColor
-                          : context.dividerColor),
-                  borderRadius: BorderRadius.circular(8.r),
+                          ? context.primaryColor.withOpacity(0.1)
+                          : context.surfaceColor,
+                      border: Border.all(
+                          color: isSelected
+                              ? context.primaryColor
+                              : context.dividerColor),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(icons[index],
+                            color: isSelected ? context.primaryColor : Colors.grey,
+                            size: 16.sp),
+                        SizedBox(width: 4.w),
+                        Text(labels[index],
+                            style: TextStyle(
+                                fontSize: 12.sp,
+                                color: isSelected
+                                    ? context.primaryColor
+                                    : context.textColor)),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(icons[index],
-                        color: isSelected ? context.primaryColor : Colors.grey,
-                        size: 16.sp),
-                    SizedBox(width: 4.w),
-                    Text(labels[index],
-                        style: TextStyle(
-                            fontSize: 12.sp,
-                            color: isSelected
-                                ? context.primaryColor
-                                : context.textColor)),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
+              );
+            }),
+          ),
+        ),
+        if (_selectedLabel == 'Other')
+          Padding(
+            padding: EdgeInsets.only(top: 15.h),
+            child: _buildTextField('Custom label (e.g. Gym, Cafe)', _customLabelController),
+          ),
+      ],
     );
   }
 
@@ -1025,12 +1111,14 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       return;
     }
 
-    final fullAddress =
-        "${_houseController.text}, ${_floorController.text.isNotEmpty ? "${_floorController.text}, " : ""}$_currentAddress";
+    String customPrefix = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
+        ? "${_customLabelController.text.trim()} - "
+        : "";
 
-    String finalLabel = _selectedLabel == 'Other'
-        ? _customLabelController.text.trim()
-        : _selectedLabel;
+    final fullAddress =
+        "$customPrefix${_houseController.text}, ${_floorController.text.isNotEmpty ? "${_floorController.text}, " : ""}$_currentAddress";
+
+    String finalLabel = _selectedLabel.toLowerCase();
 
     // Create/Update address model
     final addressController = context.read<AddressController>();

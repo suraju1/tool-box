@@ -1,8 +1,10 @@
 import 'dart:async';
-import 'package:tool_bocs/l10n/generated/app_localizations.dart';
+//import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tool_bocs/features/splash/controller/on_bording_controller.dart';
+import 'package:tool_bocs/features/splash/model/on_bording_model.dart';
+import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
@@ -128,7 +130,7 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                       size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
                   Text(
-                    AppLocalizations.of(context)!.serverStartingUp,
+                    'Server starting up...',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -137,7 +139,7 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    AppLocalizations.of(context)!.redirectingToLoginIn3,
+                    'Redirecting to login in 3 seconds...',
                     style: TextStyle(fontSize: 14, color: context.subTextColor),
                     textAlign: TextAlign.center,
                   ),
@@ -326,7 +328,7 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                               ),
                             ),
                             Text(
-                              AppLocalizations.of(context)!.welcomeToToolbocs,
+                              'Welcome to ToolBocs',
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.w900,
@@ -338,8 +340,7 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              AppLocalizations.of(context)!
-                                  .theUltimatePlatformToTrade,
+                              'The ultimate platform to trade, lend, and borrow tools in your community.',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontFamily: FontFamily.openSans,
@@ -363,11 +364,11 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    AppLocalizations.of(context)!.getStarted,
+                                    'Get Started',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -381,8 +382,7 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                             ),
                             const SizedBox(height: 32),
                             Text(
-                              AppLocalizations.of(context)!
-                                  .byContinuingYouAgreeTo,
+                              'By continuing, you agree to our Terms of Service and Privacy Policy.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,

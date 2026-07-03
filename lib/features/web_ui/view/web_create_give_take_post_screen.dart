@@ -274,7 +274,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
               context,
               MaterialPageRoute(
                   builder: (context) =>
-                      const MapAddressPickerScreen(isPickOnly: true)),
+                      MapAddressPickerScreen(isPickOnly: true, initialRadius: _diameter)),
             ).then((_) => _updateLocationFromController());
           },
           child: Container(
@@ -312,7 +312,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(AppLocalizations.of(context)!.selectAreaDiameter,
+            Text(AppLocalizations.of(context)!.selectRadius,
                 style: _labelStyle()),
             Text(
                 _diameter < 1

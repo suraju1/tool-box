@@ -385,7 +385,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
               context,
               MaterialPageRoute(
                   builder: (context) =>
-                      const MapAddressPickerScreen(isPickOnly: true)),
+                      MapAddressPickerScreen(isPickOnly: true, initialRadius: _diameter)),
             ).then((_) => _updateLocationFromController());
           },
           child: Container(
@@ -423,15 +423,20 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(AppLocalizations.of(context)!.selectAreaDiameter, style: _labelStyle()),
-            Text('${_diameter.toInt()} km', style: _labelStyle()),
+            Text(AppLocalizations.of(context)!.selectRadius, style: _labelStyle()),
+            Text(
+              _diameter < 1 
+                  ? '${(_diameter * 1000).toStringAsFixed(1)} m' 
+                  : '${_diameter.toStringAsFixed(1)} km', 
+              style: _labelStyle()
+            ),
           ],
         ),
         SizedBox(height: 15.h),
         Slider(
           value: _diameter,
-          min: 1,
-          max: 50,
+          min: 0.01,
+          max: 10.0,
           padding: EdgeInsets.zero,
           activeColor: context.primaryColor,
           inactiveColor: context.dividerColor,

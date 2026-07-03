@@ -40,17 +40,18 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final shimmer = context.watch<ShimmerController>();
     final tradeController = context.watch<TradeController>();
 
+    bool isLoadingList = tradeController.isMyTradesLoading ||
+        tradeController.isSentLoading ||
+        tradeController.isIncomingLoading;
+
+    bool isInitialLoad = isLoadingList && tradeController.myTradeStats == null;
+
     return Scaffold(
-      backgroundColor:
-          context.isDarkMode ? Colors.black : const Color(0xFFF8F9FB),
+      backgroundColor: context.scaffoldBg,
       appBar: _buildAppBar(context),
-      body: (shimmer.isLoading ||
-              tradeController.isMyTradesLoading ||
-              tradeController.isSentLoading ||
-              tradeController.isIncomingLoading)
+      body: isInitialLoad
           ? _buildShimmer(context)
           : RefreshIndicator(
               onRefresh: _loadTradeHistory,
@@ -61,7 +62,8 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
                   children: [
                     _buildTradeSummary(),
                     _buildFilters(),
-                    _buildHistoryList(),
+                    SizedBox(height: 10.h),
+                    isLoadingList ? _buildListShimmer() : _buildHistoryList(),
                   ],
                 ),
               ),
@@ -183,11 +185,11 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 10.w),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildFilterChip('all', ' ${AppLocalizations.of(context)!.all} '),
-          _buildFilterChip('sent', ' ${AppLocalizations.of(context)!.sentTab} '),
-          _buildFilterChip('received', ' ${AppLocalizations.of(context)!.receivedTab} '),
+          _buildFilterChip('all', AppLocalizations.of(context)!.all),
+          _buildFilterChip('sent', AppLocalizations.of(context)!.sentTab),
+          _buildFilterChip('received', AppLocalizations.of(context)!.receivedTab),
         ],
       ),
     );
@@ -204,20 +206,31 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
         context.read<TradeController>().fetchMyTrades(postType: postType);
       },
       child: Container(
-        margin: EdgeInsets.only(right: 8.w),
-        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.h),
+        width: 115.w,
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 10.w),
         decoration: BoxDecoration(
           color: isSelected ? context.primaryColor : context.surfaceColor,
-          borderRadius: BorderRadius.circular(20.r),
+          borderRadius: BorderRadius.circular(15.r),
           border: Border.all(
               color: isSelected ? context.primaryColor : context.dividerColor),
+          boxShadow: context.isDarkMode
+              ? []
+              : [
+                  BoxShadow(
+                    color: greyColorWithOpacity0_4,
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: isSelected ? context.onPrimaryColor : context.subTextColor,
-            fontWeight: FontWeight.w600,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: isSelected ? context.onPrimaryColor : context.textColor,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -250,7 +263,7 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
   Widget _buildHistoryList() {
     final tradeController = context.watch<TradeController>();
 
-    if (selectedFilter.trim() == 'Sent') {
+    if (selectedFilter.trim() == 'sent') {
       final responses = tradeController.sentResponses;
       if (responses.isEmpty) return _buildEmptyState();
 
@@ -284,7 +297,7 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
           );
         },
       );
-    } else if (selectedFilter.trim() == 'Received') {
+    } else if (selectedFilter.trim() == 'received') {
       final responses = tradeController.postResponses;
       if (responses.isEmpty) return _buildEmptyState();
 
@@ -543,50 +556,54 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
             ),
           ),
           // History List Shimmer
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.all(10.w),
-            itemCount: 4,
-            itemBuilder: (context, index) => Padding(
-              padding: EdgeInsets.only(bottom: 15.h),
-              child: Container(
-                padding: EdgeInsets.all(10.w),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: BorderRadius.circular(15.r),
-                ),
-                child: Row(
+          _buildListShimmer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListShimmer() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(10.w),
+      itemCount: 4,
+      itemBuilder: (context, index) => Padding(
+        padding: EdgeInsets.only(bottom: 15.h),
+        child: Container(
+          padding: EdgeInsets.all(10.w),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(15.r),
+          ),
+          child: Row(
+            children: [
+              ShimmerBox(height: 100.w, width: 90.w, radius: 10.r),
+              SizedBox(width: 15.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ShimmerBox(height: 100.w, width: 90.w, radius: 10.r),
-                    SizedBox(width: 15.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ShimmerBox(height: 20.h, width: 120.w),
-                              ShimmerBox(
-                                  height: 18.h, width: 50.w, radius: 8.r),
-                            ],
-                          ),
-                          SizedBox(height: 8.h),
-                          ShimmerBox(height: 14.h, width: 100.w),
-                          SizedBox(height: 8.h),
-                          ShimmerBox(height: 14.h, width: 130.w),
-                          SizedBox(height: 8.h),
-                          ShimmerBox(height: 14.h, width: 80.w),
-                        ],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ShimmerBox(height: 20.h, width: 120.w),
+                        ShimmerBox(
+                            height: 18.h, width: 50.w, radius: 8.r),
+                      ],
                     ),
+                    SizedBox(height: 8.h),
+                    ShimmerBox(height: 14.h, width: 100.w),
+                    SizedBox(height: 8.h),
+                    ShimmerBox(height: 14.h, width: 130.w),
+                    SizedBox(height: 8.h),
+                    ShimmerBox(height: 14.h, width: 80.w),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

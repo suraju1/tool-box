@@ -254,6 +254,21 @@ class _LocationSelectionSheetState extends State<LocationSelectionSheet> {
     );
   }
 
+  String _getDisplayLabel(AddressModel addr) {
+    if (addr.label.toLowerCase() == 'other') {
+      if (addr.address.contains(' - ')) {
+        final customLabel = addr.address.split(' - ').first.trim();
+        if (customLabel.isNotEmpty) {
+          // Capitalize first letter
+          return customLabel[0].toUpperCase() + customLabel.substring(1);
+        }
+      }
+      return 'Other';
+    }
+    if (addr.label.isEmpty) return 'Location';
+    return addr.label[0].toUpperCase() + addr.label.substring(1).toLowerCase();
+  }
+
   Widget _buildSavedAddressItem(AddressModel addr) {
     final locationController = context.watch<LocationController>();
     final isSelected = locationController.address == addr.address;
@@ -283,7 +298,7 @@ class _LocationSelectionSheetState extends State<LocationSelectionSheet> {
                   Row(
                     children: [
                       Text(
-                        addr.label,
+                        _getDisplayLabel(addr),
                         style: TextStyle(
                             fontSize: 14.sp, fontWeight: FontWeight.bold),
                       ),

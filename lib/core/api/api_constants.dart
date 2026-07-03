@@ -4,9 +4,11 @@ class ApiConstants {
   // static const String baseUrl = 'https://toolbocs.apluscrm.in/api/';
   // static const String baseUrl2 = 'https://toolbocs.apluscrm.in/';
 
-  // new
-  static const String baseUrl = 'http://88.222.245.145:4000/api/';
-  static const String baseUrl2 = 'http://88.222.245.145:4000/';
+  // // // new
+  // static const String baseUrl = 'http://88.222.245.145:4000/api/';
+  // static const String baseUrl2 = 'http://88.222.245.145:4000/';
+  static const String baseUrl = 'https://toolucsdemo.apluscrm.in/api/';
+  static const String baseUrl2 = 'https://toolucsdemo.apluscrm.in';
   // static const String baseUrl = 'https://toolucs.com/api/';
 
   // static const String baseUrl2 = 'https://toolucs.com/';
@@ -77,7 +79,8 @@ class ApiConstants {
   static const String collections = 'collections'; //get, post
   static const String fetchCollectionItems = 'collections/{{id}}'; //get
   static const String collectionItems = 'collections/{{id}}/items'; //post
-  static const String removeCollectionItem = 'collections/{{id}}/items/{{itemId}}'; //delete
+  static const String removeCollectionItem =
+      'collections/{{id}}/items/{{itemId}}'; //delete
   static const String deleteCollection = 'collections/{{id}}'; //delete
 
   // static const String reactivatePost = 'reactivate_post/{{postid}}'; //put
