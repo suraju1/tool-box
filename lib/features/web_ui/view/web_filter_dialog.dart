@@ -138,7 +138,7 @@ class _WebFilterDialogState extends State<WebFilterDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.category,
+        Text("What are you taking",
             style: _sectionTitleStyle()),
         const SizedBox(height: 12),
         Consumer<TradeController>(
@@ -268,7 +268,7 @@ class _WebFilterDialogState extends State<WebFilterDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.whatDoTheyWantIn,
+        Text("What are you giving in return",
             style: _sectionTitleStyle()),
         const SizedBox(height: 12),
         Wrap(

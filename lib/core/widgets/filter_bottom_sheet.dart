@@ -134,7 +134,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.category, style: _sectionTitleStyle()),
+        Text("What are you taking", style: _sectionTitleStyle()),
         SizedBox(height: 12.h),
         Consumer<TradeController>(
           builder: (context, tradeController, child) {
@@ -321,7 +321,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.whatDoTheyWantIn, style: _sectionTitleStyle()),
+        Text("What are you giving in return", style: _sectionTitleStyle()),
         SizedBox(height: 12.h),
         Wrap(
           spacing: 10.w,

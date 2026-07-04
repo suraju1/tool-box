@@ -1055,6 +1055,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
+              Consumer<ThemeController>(
+                builder: (context, themeController, _) {
+                  final isDark = themeController.themeMode == ThemeMode.dark ||
+                      (themeController.themeMode == ThemeMode.system &&
+                          MediaQuery.of(context).platformBrightness ==
+                              Brightness.dark);
+                  return GestureDetector(
+                    onTap: () => themeController.setTheme(
+                        isDark ? ThemeMode.light : ThemeMode.dark),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.amber.withOpacity(0.15)
+                            : Colors.indigo.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.amber.withOpacity(0.4)
+                              : Colors.indigo.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        isDark
+                            ? Icons.wb_sunny_outlined
+                            : Icons.dark_mode_outlined,
+                        color: isDark ? Colors.amber : Colors.indigo,
+                        size: 22.sp,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
           SizedBox(height: 12.h),
@@ -1173,12 +1208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             MaterialPageRoute(builder: (context) => const SettingScreen()),
           ),
         ),
-        _buildDrawerMenuItem(
-          context,
-          icon: Icons.brightness_4_outlined,
-          label: AppLocalizations.of(context)!.theme,
-          onTap: () => _showThemeBottomSheet(context),
-        ),
+
         _buildDrawerMenuItem(
           context,
           icon: Icons.login_outlined,
@@ -1235,30 +1265,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(25.r)),
       ),
       builder: (context) {
-        ThemeMode selectedMode = context.read<ThemeController>().themeMode;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
+        return Consumer<ThemeController>(
+          builder: (context, themeController, child) {
             return Container(
-              padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 30.h),
+              padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 36.h),
               decoration: BoxDecoration(
                 color: context.scaffoldBg,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25.r)),
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(25.r)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Grab handle
+                  Center(
+                    child: Container(
+                      width: 40.w,
+                      height: 4.h,
+                      margin: EdgeInsets.only(bottom: 16.h),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                    ),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        AppLocalizations.of(context)!.appearance,
-                        style: TextStyle(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: FontFamily.openSans,
-                          color: context.textColor,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.appearance,
+                            style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: FontFamily.openSans,
+                              color: context.textColor,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            'Choose your preferred look',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: context.subTextColor,
+                            ),
+                          ),
+                        ],
                       ),
                       Container(
                         decoration: BoxDecoration(
@@ -1267,70 +1322,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               : Colors.grey.shade200,
                           shape: BoxShape.circle,
                         ),
+                        padding: EdgeInsets.all(8.w),
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: Icon(Icons.close,
                               color: context.textColor, size: 20.sp),
                           padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(),
+                          constraints: const BoxConstraints(),
                         ),
-                        padding: EdgeInsets.all(8.w),
                       ),
                     ],
                   ),
-                  SizedBox(height: 15.h),
-                  Divider(color: context.dividerColor, thickness: 1),
-                  _buildThemeOption(
-                    context,
-                    title: AppLocalizations.of(context)!.lightTheme,
-                    mode: ThemeMode.light,
-                    currentMode: selectedMode,
-                    onChanged: (mode) =>
-                        setModalState(() => selectedMode = mode!),
-                  ),
-                  _buildDivider(),
-                  _buildThemeOption(
-                    context,
-                    title: AppLocalizations.of(context)!.darkTheme,
-                    mode: ThemeMode.dark,
-                    currentMode: selectedMode,
-                    onChanged: (mode) =>
-                        setModalState(() => selectedMode = mode!),
-                  ),
-                  _buildDivider(),
-                  _buildThemeOption(
-                    context,
-                    title: AppLocalizations.of(context)!.useDeviceTheme,
-                    mode: ThemeMode.system,
-                    currentMode: selectedMode,
-                    onChanged: (mode) =>
-                        setModalState(() => selectedMode = mode!),
-                  ),
-                  SizedBox(height: 30.h),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48.h,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.read<ThemeController>().setTheme(selectedMode);
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: context.primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
+                  SizedBox(height: 20.h),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: context.surfaceColor,
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(
+                          color: context.dividerColor.withOpacity(0.5)),
+                      boxShadow: context.isDarkMode
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildThemeOption(
+                          context,
+                          title: 'Light Mode',
+                          subtitle: 'Clean and bright',
+                          icon: Icons.light_mode_outlined,
+                          mode: ThemeMode.light,
+                          currentMode: themeController.themeMode,
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        AppLocalizations.of(context)!.savePreference,
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: FontFamily.openSans,
-                          color: context.onPrimaryColor,
+                        Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: context.dividerColor),
+                        _buildThemeOption(
+                          context,
+                          title: 'Dark Mode',
+                          subtitle: 'Easy on the eyes',
+                          icon: Icons.dark_mode_outlined,
+                          mode: ThemeMode.dark,
+                          currentMode: themeController.themeMode,
                         ),
-                      ),
+                        Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: context.dividerColor),
+                        _buildThemeOption(
+                          context,
+                          title: 'System Default',
+                          subtitle: 'Follows your device setting',
+                          icon: Icons.settings_brightness_outlined,
+                          mode: ThemeMode.system,
+                          currentMode: themeController.themeMode,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1345,30 +1399,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildThemeOption(
     BuildContext context, {
     required String title,
+    required String subtitle,
+    required IconData icon,
     required ThemeMode mode,
     required ThemeMode currentMode,
-    required ValueChanged<ThemeMode?> onChanged,
   }) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        unselectedWidgetColor: greyColor,
-      ),
-      child: RadioListTile<ThemeMode>(
-        value: mode,
-        groupValue: currentMode,
-        onChanged: onChanged,
-        activeColor: context.primaryColor,
-        contentPadding: EdgeInsets.zero,
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            fontFamily: FontFamily.openSans,
-            color: context.textColor,
-          ),
+    final isSelected = currentMode == mode;
+    return InkWell(
+      onTap: () => context.read<ThemeController>().setTheme(mode),
+      borderRadius: BorderRadius.circular(16.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? context.primaryColor.withOpacity(0.12)
+                    : context.isDarkMode
+                        ? Colors.white10
+                        : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? context.primaryColor : context.subTextColor,
+                size: 26.sp,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: FontFamily.openSans,
+                      color: isSelected
+                          ? context.primaryColor
+                          : context.textColor,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: context.subTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                padding: EdgeInsets.all(4.w),
+                decoration: BoxDecoration(
+                  color: context.primaryColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check,
+                    color: context.onPrimaryColor, size: 14.sp),
+              ),
+          ],
         ),
-        controlAffinity: ListTileControlAffinity.trailing,
       ),
     );
   }

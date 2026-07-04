@@ -192,7 +192,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                       Positioned(
                         top: 10.h,
-                        left: 20.w,
+                        left: 10.w,
                         child: _buildCategoryTag(post.itemCategory),
                       ),
                     ],
@@ -618,7 +618,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   Widget _buildCategoryTag(String label) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
       decoration: BoxDecoration(
         color: label.toLowerCase().contains('goods')
             ? Colors.blue.shade700
@@ -629,7 +629,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     : context.isDarkMode
                         ? Colors.white
                         : Colors.black.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(4.r),
       ),
       child: Text(
         label,
@@ -641,8 +641,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               : context.isDarkMode
                   ? Colors.black
                   : Colors.white,
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w700,
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w500,
           fontFamily: FontFamily.openSans,
         ),
       ),

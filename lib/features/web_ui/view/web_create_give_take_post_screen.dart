@@ -218,13 +218,15 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 12),
                     padding: const EdgeInsets.all(24),
                     decoration: _cardDecoration(),
-                    child: _buildTradeDetailsSection(),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: const EdgeInsets.all(24),
-                    decoration: _cardDecoration(),
-                    child: _buildWalletAndNotificationSection(),
+                    child: Column(
+                      children: [
+                        _buildTradeDetailsSection(),
+                        const SizedBox(height: 24),
+                        Divider(color: Theme.of(context).dividerColor, thickness: 1),
+                        const SizedBox(height: 24),
+                        _buildWalletAndNotificationSection(),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _buildPostButton(),

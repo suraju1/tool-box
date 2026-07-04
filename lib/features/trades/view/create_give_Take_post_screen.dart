@@ -298,7 +298,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                 ),
               ),
               SizedBox(height: 8.h),
-              // Trade Details Section
+              // Trade Details & Wallet Section
               Container(
                 margin: EdgeInsets.symmetric(vertical: 8.h),
                 padding: EdgeInsets.symmetric(
@@ -322,30 +322,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                 child: Column(
                   children: [
                     _buildTradeDetailsSection(),
-                  ],
-                ),
-              ),
-
-//wallet section
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: context.dividerColor),
-                  boxShadow: context.isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: greyColorWithOpacity0_4,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                child: Column(
-                  children: [
+                    SizedBox(height: 12.h),
+                    Divider(color: context.dividerColor, thickness: 1),
+                    SizedBox(height: 12.h),
                     _buildWalletAndNotificationSection(),
                   ],
                 ),

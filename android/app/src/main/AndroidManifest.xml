@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
-    <application android:label="TOOLUCS" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:enableOnBackInvokedCallback="true">
+    <application android:label="Toolucs" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:enableOnBackInvokedCallback="true">
         
         <!-- Set the default notification channel ID -->
         <meta-data

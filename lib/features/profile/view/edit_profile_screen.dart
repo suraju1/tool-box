@@ -455,7 +455,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               border: InputBorder.none,
               hintText: AppLocalizations.of(context)!.enterYourBio,
               hintStyle: TextStyle(
-                  fontSize: 10.sp,
+                  fontSize: 14.sp,
                   color: context.textColor.withOpacity(0.5),
                   fontFamily: FontFamily.openSans),
             ),
