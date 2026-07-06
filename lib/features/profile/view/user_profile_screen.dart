@@ -86,7 +86,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final shimmer = context.watch<ShimmerController>();
     final profileController = context.watch<ProfileController>();
-    final userProfile = _userProfile;
+    UserProfileModel? userProfile = _userProfile;
+    if (_userProfile != null) {
+      if (profileController.viewedProfile?.userDetails.id == _userProfile!.userDetails.id) {
+        userProfile = profileController.viewedProfile;
+      } else if (profileController.ownProfile?.userDetails.id == _userProfile!.userDetails.id) {
+        userProfile = profileController.ownProfile;
+      }
+    }
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -814,9 +821,38 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return GestureDetector(
       onTap: isSaving
           ? null
-          : () {
+          : () async {
               if (_userProfile != null) {
-                SaveToCollectionBottomSheet.show(context, _userProfile!.userDetails.id);
+                if (_isUserSaved) {
+                  final response = await profileController.unsaveUser(_userProfile!.userDetails.id);
+                  if (context.mounted) {
+                    if (response.success) {
+                      setState(() {
+                        _isUserSaved = false;
+                      });
+                      ToastService.showSuccessToast(context, 'User removed from saved');
+                    } else {
+                      ToastService.showErrorToast(context, response.message ?? 'Failed to unsave');
+                    }
+                  }
+                } else {
+                  SaveToCollectionBottomSheet.show(context, _userProfile!.userDetails.id).then((_) {
+                    final targetUserId = _userProfile!.userDetails.id;
+                    final currentUserId = context.read<AuthController>().currentUser?.id;
+                    final isOwnProfile = targetUserId == currentUserId;
+                    context.read<ProfileController>().getUserProfile(targetUserId, isOwnProfile: isOwnProfile).then((success) {
+                      if (success) {
+                        final profile = context.read<ProfileController>().userProfile;
+                        if (profile != null && mounted) {
+                          setState(() {
+                            _userProfile = profile;
+                            _isUserSaved = profile.isSaved ?? false;
+                          });
+                        }
+                      }
+                    });
+                  });
+                }
               }
             },
       child: Container(

@@ -681,6 +681,19 @@ class TradeController extends ChangeNotifier {
 
       if (response.success) {
         _selectedPost = response.data;
+        
+        // Preserve distanceKm from existing lists if backend detail API doesn't provide it
+        if (_selectedPost?.distanceKm == null) {
+          final existingPosts = [..._homePosts, ..._givePosts, ..._takePosts];
+          try {
+            final existingPost = existingPosts.firstWhere((p) => p.id == id);
+            if (existingPost.distanceKm != null) {
+              _selectedPost = _selectedPost?.copyWith(distanceKm: existingPost.distanceKm);
+            }
+          } catch (_) {
+            // Post not found in local lists, distanceKm remains null
+          }
+        }
       } else {
         _errorMessage = response.message;
       }

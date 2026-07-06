@@ -490,10 +490,12 @@ class _ChatScreenState extends State<ChatScreen> {
                               ? trade.responderMobile
                               : trade.posterMobile;
 
+                          if (partnerMobile == null || partnerMobile.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
                           return Text(
-                            partnerMobile != null && partnerMobile.isNotEmpty
-                                ? partnerMobile
-                                : 'NA',
+                            partnerMobile,
                             style: TextStyle(
                               color: context.subTextColor,
                               fontSize: 12.sp,

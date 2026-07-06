@@ -434,21 +434,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontFamily: FontFamily.openSans,
                       ),
                     ),
-                    if (user.giverType != null || user.takerType != null)
-                      Padding(
-                        padding: EdgeInsets.only(top: 2.h),
-                        child: Text(
-                          [user.giverType, user.takerType]
-                              .where((e) => e != null && e!.isNotEmpty)
-                              .join(' - '),
-                          style: TextStyle(
-                            color: context.textColor,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: FontFamily.openSans,
+                    Builder(
+                      builder: (context) {
+                        final profileType = [user.giverType, user.takerType]
+                            .where((e) => e != null && e!.isNotEmpty)
+                            .join(' - ');
+                        final displayText = profileType.isEmpty
+                            ? 'Goods Giver - Goods Taker'
+                            : profileType;
+                        return Padding(
+                          padding: EdgeInsets.only(top: 2.h),
+                          child: Text(
+                            displayText,
+                            style: TextStyle(
+                              color: context.textColor,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: FontFamily.openSans,
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
+                    ),
                     if (user.bio != null && user.bio!.trim().isNotEmpty) ...[
                       SizedBox(height: 3.h),
                       RichText(
@@ -470,12 +477,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                     SizedBox(height: 16.h),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16.w, vertical: 10.h),
                       decoration: BoxDecoration(
-                        color: context.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                        color: context.isDarkMode
+                            ? const Color(0xFF1E1E1E)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(
-                          color: context.isDarkMode ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2),
+                          color: context.isDarkMode
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.black.withOpacity(0.2),
                           width: 1,
                         ),
                       ),
@@ -493,7 +505,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               "${AppLocalizations.of(context)!.creditBalance}${user.remainingBalance ?? '50.00'}",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: context.isDarkMode ? Colors.white : Colors.black,
+                                color: context.isDarkMode
+                                    ? Colors.white
+                                    : Colors.black,
                                 fontSize: 14.sp,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -812,12 +826,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               InkWell(
-                onTap: () => Navigator.pushNamed(context, AppRoutes.tradeHistory),
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.tradeHistory),
                 borderRadius: BorderRadius.circular(20.r),
                 child: Container(
                   padding: EdgeInsets.all(6.w),
                   decoration: BoxDecoration(
-                    color: context.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                    color: context.isDarkMode
+                        ? Colors.grey.shade800
+                        : Colors.grey.shade200,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -860,7 +877,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 16.h),
           Center(
             child: Text(
-              AppLocalizations.of(context)!.profileSavedBy(profile.userDetails.savedCount.toString()),
+              AppLocalizations.of(context)!
+                  .profileSavedBy(profile.userDetails.savedCount.toString()),
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
@@ -1062,8 +1080,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           MediaQuery.of(context).platformBrightness ==
                               Brightness.dark);
                   return GestureDetector(
-                    onTap: () => themeController.setTheme(
-                        isDark ? ThemeMode.light : ThemeMode.dark),
+                    onTap: () => themeController
+                        .setTheme(isDark ? ThemeMode.light : ThemeMode.dark),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
                       padding: EdgeInsets.all(10.w),
@@ -1102,44 +1120,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fontFamily: FontFamily.openSans,
             ),
           ),
-          if (user.bio != null && user.bio!.trim().isNotEmpty) ...[
-            SizedBox(height: 4.h),
-            RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  color: context.subTextColor,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w400,
-                  fontFamily: FontFamily.openSans,
-                  height: 1.25,
+          Builder(
+            builder: (context) {
+              final profileType = [user.giverType, user.takerType]
+                  .where((e) => e != null && e!.isNotEmpty)
+                  .join(' - ');
+              final displayText = profileType.isEmpty
+                  ? 'Goods Giver - Goods Taker'
+                  : profileType;
+              return Padding(
+                padding: EdgeInsets.only(top: 4.h),
+                child: Text(
+                  displayText,
+                  style: TextStyle(
+                    color: context.textColor,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: FontFamily.openSans,
+                  ),
                 ),
-                children: _buildBioTextSpans(user.bio!.trim(), context),
-              ),
-              softWrap: true,
-            ),
-          ],
+              );
+            },
+          ),
           SizedBox(height: 8.h),
-          Row(
-            children: [
-              Text(
-                AppLocalizations.of(context)!.creditBalance,
-                style: TextStyle(
-                  color: context.subTextColor,
-                  fontSize: 14.sp,
-                  fontFamily: FontFamily.openSans,
-                  fontWeight: FontWeight.w500,
-                ),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 16.w,
+              vertical: 8.h,
+            ),
+            decoration: BoxDecoration(
+              color:
+                  context.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: context.isDarkMode
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.2),
+                width: 1,
               ),
-              Text(
-                user.remainingBalance ?? '0.00',
-                style: TextStyle(
-                  color: context.textColor,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: FontFamily.openSans,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.credit_card,
+                  size: 20.sp,
+                  color: Colors.orange,
                 ),
-              ),
-            ],
+                SizedBox(width: 12.w),
+                Flexible(
+                  child: Text(
+                    "${AppLocalizations.of(context)!.creditBalance}${user.remainingBalance ?? '0.00'}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: context.isDarkMode ? Colors.white : Colors.black,
+                      fontSize: 14.sp,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1208,7 +1250,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             MaterialPageRoute(builder: (context) => const SettingScreen()),
           ),
         ),
-
         _buildDrawerMenuItem(
           context,
           icon: Icons.login_outlined,
@@ -1271,8 +1312,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 36.h),
               decoration: BoxDecoration(
                 color: context.scaffoldBg,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(25.r)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25.r)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1439,9 +1479,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
                       fontFamily: FontFamily.openSans,
-                      color: isSelected
-                          ? context.primaryColor
-                          : context.textColor,
+                      color:
+                          isSelected ? context.primaryColor : context.textColor,
                     ),
                   ),
                   SizedBox(height: 2.h),

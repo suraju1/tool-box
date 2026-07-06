@@ -158,8 +158,8 @@ class _MySubscriptionsListScreenState extends State<MySubscriptionsListScreen> {
             child: Container(
               height: 150.r,
               width: 150.r,
-              decoration: const BoxDecoration(
-                color: Colors.white12,
+              decoration: BoxDecoration(
+                color: context.onPrimaryColor.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -175,7 +175,7 @@ class _MySubscriptionsListScreenState extends State<MySubscriptionsListScreen> {
                     Text(
                       AppLocalizations.of(context)!.currentPlan,
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: context.onPrimaryColor.withOpacity(0.7),
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
                       ),
@@ -184,7 +184,7 @@ class _MySubscriptionsListScreenState extends State<MySubscriptionsListScreen> {
                       padding:
                           EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: context.onPrimaryColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(
@@ -215,7 +215,7 @@ class _MySubscriptionsListScreenState extends State<MySubscriptionsListScreen> {
                 Text(
                   AppLocalizations.of(context)!.expiresOn(expiryDate),
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: context.onPrimaryColor.withOpacity(0.7),
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w400,
                   ),
@@ -281,9 +281,9 @@ class _MySubscriptionsListScreenState extends State<MySubscriptionsListScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isActive ? Colors.white : context.subTextColor,
+            color: isActive ? context.onPrimaryColor : context.subTextColor,
             fontSize: 14.sp,
-            fontWeight: FontWeight.w700,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),

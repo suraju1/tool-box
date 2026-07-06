@@ -633,7 +633,7 @@ class _GiveScreenState extends State<GiveScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          postType?.toLowerCase() == 'give' ? AppLocalizations.of(context)!.userIsGiving(owner) : AppLocalizations.of(context)!.userIsTaking(owner),
+                          postType?.toLowerCase() == 'give' ? AppLocalizations.of(context)!.userIsGiving(owner.split(' ').first) : AppLocalizations.of(context)!.userIsTaking(owner.split(' ').first),
                           style: TextStyle(
                             fontSize: 9.sp,
                             color: context.subTextColor,
@@ -720,7 +720,7 @@ class _GiveScreenState extends State<GiveScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                owner,
+                                owner.split(' ').first,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: context.textColor,

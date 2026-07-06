@@ -7,7 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:tool_bocs/core/controller/location_controller.dart';
-import 'package:tool_bocs/features/location/view/map_address_picker_screen.dart';
+import 'package:tool_bocs/features/location/view/location_selection_sheet.dart';
 import 'package:tool_bocs/features/trades/controller/trade_controller.dart';
 import 'package:tool_bocs/features/trades/model/category_model.dart';
 import 'package:tool_bocs/features/trades/model/post_request_model.dart';
@@ -20,6 +20,7 @@ import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/core/widgets/app_price_range_selector.dart';
 import 'package:tool_bocs/core/widgets/popup_menu_arrow_shape.dart';
+import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
 
 class CreateGivePostScreen extends StatefulWidget {
   const CreateGivePostScreen({super.key});
@@ -36,6 +37,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
   RangeValues _priceRange = const RangeValues(10, 50000);
   bool _isNegotiable = false;
   bool _notifyPartnersOnly = false;
+  List<int> _selectedCollectionIds = [];
   bool _isHomemade = false;
   bool _isStoreBought = false;
   String _returnSelectedCondition = 'New';
@@ -93,6 +95,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TradeController>().fetchCategories();
       context.read<SubscriptionController>().fetchMySubscription();
+      context.read<ProfileController>().getCollections();
       _initLocation();
     });
   }
@@ -360,12 +363,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         SizedBox(height: 8.h),
         InkWell(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      MapAddressPickerScreen(isPickOnly: true, initialRadius: _diameter)),
-            ).then((_) => _updateLocationFromController());
+            LocationSelectionSheet.show(context,
+                    isPickOnly: true, initialRadius: _diameter)
+                .then((_) => _updateLocationFromController());
           },
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
@@ -380,11 +380,25 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                     color: context.subTextColor, size: 20.sp),
                 SizedBox(width: 10.w),
                 Expanded(
-                  child: Text(
-                    _pickupAddress,
+                  child: RichText(
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13.sp, color: context.textColor),
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${(context.watch<LocationController>().label ?? "LOCATION").toUpperCase()} - ',
+                          style: TextStyle(
+                            color: context.textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                        TextSpan(
+                          text: context.watch<LocationController>().address ?? _pickupAddress,
+                          style: TextStyle(fontSize: 13.sp, color: context.textColor),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Text(
@@ -402,13 +416,13 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(AppLocalizations.of(context)!.selectRadius, style: _labelStyle()),
+            Text(AppLocalizations.of(context)!.selectRadius,
+                style: _labelStyle()),
             Text(
-              _diameter < 1 
-                  ? '${(_diameter * 1000).toStringAsFixed(1)} m' 
-                  : '${_diameter.toStringAsFixed(1)} km', 
-              style: _labelStyle()
-            ),
+                _diameter < 1
+                    ? '${(_diameter * 1000).toStringAsFixed(1)} m'
+                    : '${_diameter.toStringAsFixed(1)} km',
+                style: _labelStyle()),
           ],
         ),
         SizedBox(height: 15.h),
@@ -437,7 +451,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.tradeDetails, style: _labelStyle(size: 14)),
+        Text(AppLocalizations.of(context)!.tradeDetails,
+            style: _labelStyle(size: 14)),
         SizedBox(height: 8.h),
         Text(AppLocalizations.of(context)!.tradeType,
             style: TextStyle(color: context.subTextColor, fontSize: 12.sp)),
@@ -469,7 +484,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.addPhotos, style: _labelStyle(size: 14)),
+        Text(AppLocalizations.of(context)!.addPhotos,
+            style: _labelStyle(size: 14)),
         SizedBox(height: 15.h),
         GestureDetector(
           onTap: _itemImages.length >= 5 ? null : () => _pickImage(false),
@@ -533,8 +549,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8.r),
                         image: DecorationImage(
-                          image: kIsWeb 
-                              ? NetworkImage(_itemImages[index].path) as ImageProvider
+                          image: kIsWeb
+                              ? NetworkImage(_itemImages[index].path)
+                                  as ImageProvider
                               : FileImage(File(_itemImages[index].path)),
                           fit: BoxFit.cover,
                         ),
@@ -566,7 +583,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.itemDetails, style: _labelStyle(size: 16)),
+        Text(AppLocalizations.of(context)!.itemDetails,
+            style: _labelStyle(size: 16)),
         SizedBox(height: 12.h),
         Text(AppLocalizations.of(context)!.itemName, style: _labelStyle()),
         SizedBox(height: 8.h),
@@ -613,7 +631,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           value: _selectedCondition,
           icon: Icon(Icons.keyboard_arrow_down, color: context.subTextColor),
           decoration: InputDecoration(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10.r),
               borderSide: BorderSide(color: context.dividerColor),
@@ -628,7 +647,11 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           items: ['New', 'Like New', 'Used'].map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value, style: TextStyle(fontSize: 13.sp, color: context.textColor, fontWeight: FontWeight.w500)),
+              child: Text(value,
+                  style: TextStyle(
+                      fontSize: 13.sp,
+                      color: context.textColor,
+                      fontWeight: FontWeight.w500)),
             );
           }).toList(),
           onChanged: (newValue) {
@@ -655,10 +678,12 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         SizedBox(height: 8.h),
         DropdownButtonFormField<String>(
           value: currentSource,
-          hint: Text(AppLocalizations.of(context)!.selectSource, style: TextStyle(fontSize: 13.sp, color: context.subTextColor)),
+          hint: Text(AppLocalizations.of(context)!.selectSource,
+              style: TextStyle(fontSize: 13.sp, color: context.subTextColor)),
           icon: Icon(Icons.keyboard_arrow_down, color: context.subTextColor),
           decoration: InputDecoration(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10.r),
               borderSide: BorderSide(color: context.dividerColor),
@@ -673,7 +698,11 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           items: ['Homemade', 'Store bought'].map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value, style: TextStyle(fontSize: 13.sp, color: context.textColor, fontWeight: FontWeight.w500)),
+              child: Text(value,
+                  style: TextStyle(
+                      fontSize: 13.sp,
+                      color: context.textColor,
+                      fontWeight: FontWeight.w500)),
             );
           }).toList(),
           onChanged: (newValue) {
@@ -715,7 +744,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.whatDoYouWantIn, style: _labelStyle(size: 16)),
+        Text(AppLocalizations.of(context)!.whatDoYouWantIn,
+            style: _labelStyle(size: 16)),
         SizedBox(height: 16.h),
         Container(
           height: 45.h,
@@ -726,10 +756,14 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           ),
           child: Row(
             children: [
-              _buildToggleButton(AppLocalizations.of(context)!.priceLabel, _isPriceSelected, () {
+              _buildToggleButton(
+                  AppLocalizations.of(context)!.priceLabel, _isPriceSelected,
+                  () {
                 setState(() => _isPriceSelected = true);
               }),
-              _buildToggleButton(AppLocalizations.of(context)!.itemLabel, !_isPriceSelected, () {
+              _buildToggleButton(
+                  AppLocalizations.of(context)!.itemLabel, !_isPriceSelected,
+                  () {
                 setState(() => _isPriceSelected = false);
               }),
             ],
@@ -792,7 +826,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppLocalizations.of(context)!.addPhotos, style: _labelStyle(size: 14)),
+            Text(AppLocalizations.of(context)!.addPhotos,
+                style: _labelStyle(size: 14)),
             SizedBox(height: 15.h),
             GestureDetector(
               onTap:
@@ -858,9 +893,11 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8.r),
                             image: DecorationImage(
-                              image: kIsWeb 
-                                  ? NetworkImage(_returnItemImages[index].path) as ImageProvider
-                                  : FileImage(File(_returnItemImages[index].path)),
+                              image: kIsWeb
+                                  ? NetworkImage(_returnItemImages[index].path)
+                                      as ImageProvider
+                                  : FileImage(
+                                      File(_returnItemImages[index].path)),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -1027,7 +1064,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(AppLocalizations.of(context)!.wallet, style: _labelStyle(size: 14)),
+              Text(AppLocalizations.of(context)!.wallet,
+                  style: _labelStyle(size: 14)),
               SizedBox(height: 8.h),
               Consumer<SubscriptionController>(
                 builder: (context, subscriptionController, child) {
@@ -1043,12 +1081,16 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                           Icon(Icons.account_balance_wallet_outlined,
                               color: context.primaryColor, size: 18.sp),
                           SizedBox(width: 8.w),
-                          Text(AppLocalizations.of(context)!.creditsPerTrade(postPrice.toString()),
+                          Text(
+                              AppLocalizations.of(context)!
+                                  .creditsPerTrade(postPrice.toString()),
                               style: TextStyle(
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w600)),
                           const Spacer(),
-                          Text(AppLocalizations.of(context)!.creditsLeft(remainingCredit.toString()),
+                          Text(
+                              AppLocalizations.of(context)!
+                                  .creditsLeft(remainingCredit.toString()),
                               style: TextStyle(
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w700,
@@ -1062,7 +1104,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
               SizedBox(height: 6.h),
               Divider(color: context.dividerColor),
               SizedBox(height: 6.h),
-              Text(AppLocalizations.of(context)!.notificationSettings, style: _labelStyle(size: 14)),
+              Text(AppLocalizations.of(context)!.notificationSettings,
+                  style: _labelStyle(size: 14)),
               SizedBox(height: 12.h),
               Row(
                 children: [
@@ -1086,11 +1129,66 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                     value: _notifyPartnersOnly,
                     activeColor: Colors.green,
                     padding: EdgeInsets.all(8.w),
-                    onChanged: (val) =>
-                        setState(() => _notifyPartnersOnly = val),
+                    onChanged: (val) {
+                      setState(() {
+                        _notifyPartnersOnly = val;
+                        if (!val) {
+                          _selectedCollectionIds.clear();
+                        }
+                      });
+                    },
                   ),
                 ],
               ),
+              if (_notifyPartnersOnly) ...[
+                SizedBox(height: 12.h),
+                Consumer<ProfileController>(
+                  builder: (context, profileCtrl, child) {
+                    if (profileCtrl.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (profileCtrl.collections.isEmpty) {
+                      return Text(
+                        "No saved collections found.",
+                        style: TextStyle(color: Colors.red, fontSize: 12.sp),
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Select Collections",
+                            style: TextStyle(
+                                fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                        SizedBox(height: 8.h),
+                        Wrap(
+                          spacing: 8.w,
+                          runSpacing: 4.h,
+                          children: profileCtrl.collections.map((collection) {
+                            final isSelected =
+                                _selectedCollectionIds.contains(collection.id);
+                            return FilterChip(
+                              label: Text(collection.name ?? 'Unknown'),
+                              selected: isSelected,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedCollectionIds.add(collection.id);
+                                  } else {
+                                    _selectedCollectionIds
+                                        .remove(collection.id);
+                                  }
+                                });
+                              },
+                              selectedColor: Colors.green.withOpacity(0.2),
+                              checkmarkColor: Colors.green,
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -1202,7 +1300,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     }
 
     final Object? args = ModalRoute.of(context)?.settings.arguments;
-    final String title = args == 'Create Take Post' ? AppLocalizations.of(context)!.createTakePost : AppLocalizations.of(context)!.createGivePost;
+    final String title = args == 'Create Take Post'
+        ? AppLocalizations.of(context)!.createTakePost
+        : AppLocalizations.of(context)!.createGivePost;
     final String postType =
         title.toLowerCase().contains('take') ? 'take' : 'give';
 
@@ -1232,10 +1332,10 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
               0)
           .toInt(),
       notifyPartnersOnly: _notifyPartnersOnly,
+      notifyCollectionIds: _notifyPartnersOnly ? _selectedCollectionIds : null,
       postType: postType,
       itemImages: _itemImages,
-      returnItemImages:
-          _isPriceSelected ? [] : _returnItemImages,
+      returnItemImages: _isPriceSelected ? [] : _returnItemImages,
       returnItemName:
           (!_isPriceSelected && _returnItemNameController.text.isNotEmpty)
               ? _returnItemNameController.text
@@ -1519,7 +1619,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
   Widget _buildAppBar() {
     // take teh argument data
     final Object? args = ModalRoute.of(context)?.settings.arguments;
-    final String title = args == 'Create Take Post' ? AppLocalizations.of(context)!.createTakePost : AppLocalizations.of(context)!.createGivePost;
+    final String title = args == 'Create Take Post'
+        ? AppLocalizations.of(context)!.createTakePost
+        : AppLocalizations.of(context)!.createGivePost;
     return Container(
       alignment: Alignment.centerLeft,
       padding: EdgeInsets.only(top: 20.h),

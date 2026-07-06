@@ -78,7 +78,14 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
   Widget build(BuildContext context) {
     final shimmer = context.watch<ShimmerController>();
     final profileController = context.watch<ProfileController>();
-    final userProfile = _userProfile;
+    UserProfileModel? userProfile = _userProfile;
+    if (_userProfile != null) {
+      if (profileController.viewedProfile?.userDetails.id == _userProfile!.userDetails.id) {
+        userProfile = profileController.viewedProfile;
+      } else if (profileController.ownProfile?.userDetails.id == _userProfile!.userDetails.id) {
+        userProfile = profileController.ownProfile;
+      }
+    }
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,

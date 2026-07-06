@@ -22,6 +22,10 @@ class UserProfileModel {
         userDetailsJson['review_stats'] == null) {
       userDetailsJson['review_stats'] = json['review_stats'];
     }
+    if (json['user_type'] != null &&
+        userDetailsJson['user_type'] == null) {
+      userDetailsJson['user_type'] = json['user_type'];
+    }
 
     return UserProfileModel(
       userDetails: UserDetails.fromJson(userDetailsJson),

@@ -8,6 +8,7 @@ import 'package:tool_bocs/features/subscription/controller/subscription_controll
 import 'package:tool_bocs/features/subscription/model/subscription_model.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
 import 'package:tool_bocs/core/widgets/shimmer_box.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class ChoosePlanScreen extends StatefulWidget {
   const ChoosePlanScreen({super.key});
@@ -17,12 +18,26 @@ class ChoosePlanScreen extends StatefulWidget {
 }
 
 class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
+  late Razorpay _razorpay;
+  int? _activePlanId;
+
   @override
   void initState() {
     super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SubscriptionController>().fetchAvailablePlans();
     });
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
   }
 
   @override
@@ -163,19 +178,65 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
     );
   }
 
-  void _onSubscribe(BuildContext context, int id) async {
+  void _onSubscribe(BuildContext context, AvailablePlan plan) async {
+    _activePlanId = plan.id;
     final controller = context.read<SubscriptionController>();
-    final success = await controller.activateSubscription(id);
+    final orderResponse = await controller.createOrder(plan.id);
 
     if (context.mounted) {
+      if (orderResponse != null && orderResponse.success && orderResponse.orderId != null) {
+        var options = {
+          'key': 'rzp_test_T1ASSkvu0ktQw8',
+          'amount': orderResponse.amount > 0
+              ? orderResponse.amount
+              : (double.tryParse(plan.price) ?? 0) * 100,
+          'name': 'Toolbocs',
+          'description': plan.name,
+          'order_id': orderResponse.orderId,
+          'prefill': {
+            'contact': '',
+            'email': '',
+          },
+          'theme': {
+            'color': '#45C0C7'
+          }
+        };
+
+        try {
+          _razorpay.open(options);
+        } catch (e) {
+          debugPrint('Error opening Razorpay checkout: $e');
+          controller.cancelActivation();
+        }
+      } else if (controller.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(controller.errorMessage!),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    if (_activePlanId == null) return;
+    final controller = context.read<SubscriptionController>();
+    final success = await controller.verifyPayment(
+      orderId: response.orderId!,
+      paymentId: response.paymentId!,
+      signature: response.signature!,
+      subscriptionId: _activePlanId!,
+    );
+
+    if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(controller.successMessage ?? 'Subscription activated!'),
+            content: Text(controller.successMessage ?? 'Payment successful & subscription activated'),
             backgroundColor: Colors.green,
           ),
         );
-        // Navigate to status screen
         Navigator.pushReplacementNamed(context, AppRoutes.mySubscription);
       } else if (controller.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -186,6 +247,22 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
         );
       }
     }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    if (mounted) {
+      context.read<SubscriptionController>().cancelActivation();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Payment Failed: ${response.message ?? 'Cancelled'}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    // Handle external wallet if needed
   }
 
   Widget _buildPlanCard(
@@ -339,7 +416,7 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
                   width: double.infinity,
                   height: 50.h,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : () => _onSubscribe(context, plan.id),
+                    onPressed: isLoading ? null : () => _onSubscribe(context, plan),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           isPopular ? context.primaryColor : const Color(0xFFE8F1FF),

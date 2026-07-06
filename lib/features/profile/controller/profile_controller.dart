@@ -166,7 +166,7 @@ class ProfileController extends ChangeNotifier {
     final response = await _profileService.removeCollectionItem(collectionId, itemId);
     if (response.success) {
       // User requested that removing from a collection should also remove from All Saved
-      await unsaveUser(itemId);
+      await unsaveUser(itemId, removeFromCollections: false);
       
       await getCollections(); // Update the count in the collections list
       await getSavedUsers(); // Update the "All Saved" list
@@ -176,10 +176,17 @@ class ProfileController extends ChangeNotifier {
     return response;
   }
 
-  Future<ApiResponse<dynamic>> unsaveUser(int userId) async {
+  Future<ApiResponse<dynamic>> unsaveUser(int userId, {bool removeFromCollections = true}) async {
     final response = await _profileService.unsaveUser(userId);
 
     if (response.success) {
+      if (removeFromCollections) {
+        // Also remove the user from all custom collections
+        for (var collection in _collections) {
+          await _profileService.removeCollectionItem(collection.id, userId);
+        }
+        await getCollections(); // Refresh the collection list count
+      }
       await getSavedUsers();
     } else {
       _errorMessage = response.message;

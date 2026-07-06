@@ -264,7 +264,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
 
     final List<Map<String, dynamic>> allMatches = [];
-    
+
     for (var r in incomingResponses) {
       allMatches.add({'response': r, 'isIncoming': true});
     }
@@ -275,8 +275,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // Sort all matches by date (newest first)
     allMatches.sort((a, b) {
       try {
-        DateTime dateA = DateTime.parse((a['response'] as TradeResponseModel).createdAt);
-        DateTime dateB = DateTime.parse((b['response'] as TradeResponseModel).createdAt);
+        DateTime dateA =
+            DateTime.parse((a['response'] as TradeResponseModel).createdAt);
+        DateTime dateB =
+            DateTime.parse((b['response'] as TradeResponseModel).createdAt);
         return dateB.compareTo(dateA);
       } catch (e) {
         return 0;
@@ -354,7 +356,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           response.returnItemName!.isNotEmpty &&
           response.returnItemName != postItem) {
         subText = 'Giving you ${response.returnItemName} in return';
-      } else if (response.itemName != null && response.itemName!.isNotEmpty && (response.responseType == 'item' || response.responseType == 'Item') && response.itemName != postItem) {
+      } else if (response.itemName != null &&
+          response.itemName!.isNotEmpty &&
+          (response.responseType == 'item' ||
+              response.responseType == 'Item') &&
+          response.itemName != postItem) {
         subText = 'Giving you ${response.itemName} in return';
       } else if ((response.priceRangeStart ?? 0) > 0 ||
           (response.priceRangeEnd ?? 0) > 0) {
@@ -364,7 +370,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ? 'Giving you ₹$startPrice in return'
             : 'Giving you ₹$startPrice - ₹$endPrice in return';
       } else {
-        subText = '(Category: ${response.itemCategory ?? 'Unknown'} | Condition: ${response.itemCondition ?? 'Unknown'})';
+        subText =
+            '(Category: ${response.itemCategory ?? 'Unknown'} | Condition: ${response.itemCondition ?? 'Unknown'})';
       }
     } else {
       final postItem = response.postItemName ?? 'item';
@@ -378,7 +385,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold)),
       ];
 
-      if (response.itemName != null && response.itemName!.isNotEmpty && response.itemName != postItem) {
+      if (response.itemName != null &&
+          response.itemName!.isNotEmpty &&
+          response.itemName != postItem) {
         subText = 'Taking ${response.itemName} in return';
       } else if ((response.priceRangeStart ?? 0) > 0 ||
           (response.priceRangeEnd ?? 0) > 0) {
@@ -388,7 +397,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ? 'Taking ₹$startPrice in return'
             : 'Taking ₹$startPrice - ₹$endPrice in return';
       } else {
-         subText = 'Taking an offer in return';
+        subText = 'Taking an offer in return';
       }
     }
 

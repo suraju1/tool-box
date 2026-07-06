@@ -114,6 +114,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
                                 _buildImageGallery(
                                   post.itemImages,
                                   post.itemCategory,
+                                  post.tradeType,
                                 ),
                                 const SizedBox(height: 24),
                                 _buildConditionAndSourceBox(post),
@@ -186,59 +187,57 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
             if (post == null) return const SizedBox.shrink();
             return Row(
               children: [
-                IconButton(
-                  onPressed: _isSharing
-                      ? null
-                      : () async {
-                          setState(() => _isSharing = true);
-                          try {
-                            await ShareService().sharePost(
-                              context,
-                              post: post,
-                              includeImage: true,
-                            );
-                          } catch (e) {
-                            if (!context.mounted) return;
-                            ToastService.showErrorToast(
-                              context,
-                              'Unable to share. Try again.',
-                            );
-                          } finally {
-                            if (mounted) setState(() => _isSharing = false);
+                  Consumer<AuthController>(
+                    builder: (context, authController, _) {
+                      final isOwner =
+                          authController.currentUser?.id == post.userId;
+                      return PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert,
+                            color: context.textColor, size: 20),
+                        onSelected: (value) async {
+                          if (value == 'share') {
+                            try {
+                              await ShareService().sharePost(
+                                context,
+                                post: post,
+                                includeImage: true,
+                              );
+                            } catch (e) {
+                              if (context.mounted) {
+                                ToastService.showErrorToast(
+                                    context, 'Unable to share. Try again.');
+                              }
+                            }
+                          } else if (value == 'report') {
+                            ReportPostSheet.show(context, post.id);
                           }
                         },
-                  icon: _isSharing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.share_outlined, color: Colors.grey),
-                  tooltip: 'Share',
-                ),
-                Consumer<AuthController>(
-                  builder: (context, authController, _) {
-                    final isOwner =
-                        authController.currentUser?.id == post.userId;
-                    if (isOwner) return const SizedBox.shrink();
-                    return PopupMenuButton<String>(
-                      icon: Icon(Icons.more_vert,
-                          color: context.textColor, size: 20),
-                      onSelected: (value) {
-                        if (value == 'report') {
-                          ReportPostSheet.show(context, post.id);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem<String>(
-                          value: 'report',
-                          child: Text(AppLocalizations.of(context)!.reportPost,
-                              style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                        itemBuilder: (context) => [
+                          PopupMenuItem<String>(
+                            value: 'share',
+                            child: Row(
+                              children: [
+                                Icon(Icons.share_outlined, color: context.textColor, size: 20),
+                                const SizedBox(width: 10),
+                                Text(AppLocalizations.of(context)!.sharePost, style: TextStyle(color: context.textColor)),
+                              ],
+                            ),
+                          ),
+                          if (!isOwner)
+                            PopupMenuItem<String>(
+                              value: 'report',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.report_problem_outlined, color: Colors.red, size: 20),
+                                  const SizedBox(width: 10),
+                                  Text(AppLocalizations.of(context)!.reportPost, style: const TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 const SizedBox(width: 16),
               ],
             );
@@ -299,7 +298,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
     );
   }
 
-  Widget _buildImageGallery(List<String> images, String category) {
+  Widget _buildImageGallery(List<String> images, String category, String tradeType) {
     if (images.isEmpty) {
       return Container(
         height: 600,
@@ -362,6 +361,11 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
                     top: 24,
                     left: 24,
                     child: _buildCategoryTag(category),
+                  ),
+                  Positioned(
+                    top: 24,
+                    right: 24,
+                    child: _buildTradeTypeTag(tradeType),
                   ),
                 ],
               ),
@@ -446,6 +450,26 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
               : context.isDarkMode
                   ? Colors.black
                   : Colors.white,
+          fontSize: 12,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTradeTypeTag(String tradeType) {
+    if (tradeType.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: context.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        tradeType.toUpperCase(),
+        style: TextStyle(
+          color: context.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade800,
           fontSize: 12,
           letterSpacing: 1.2,
           fontWeight: FontWeight.w700,

@@ -632,7 +632,7 @@ class _TakeScreenState extends State<TakeScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          post.postType.toLowerCase() == 'give' ? AppLocalizations.of(context)!.userIsGiving(post.userName ?? 'User') : AppLocalizations.of(context)!.userIsTaking(post.userName ?? 'User'),
+                          post.postType.toLowerCase() == 'give' ? AppLocalizations.of(context)!.userIsGiving((post.userName ?? 'User').split(' ').first) : AppLocalizations.of(context)!.userIsTaking((post.userName ?? 'User').split(' ').first),
                           style: TextStyle(
                             fontSize: 9.sp,
                             color: context.subTextColor,
@@ -707,7 +707,7 @@ class _TakeScreenState extends State<TakeScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                post.userName,
+                                post.userName.split(' ').first,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: context.textColor,

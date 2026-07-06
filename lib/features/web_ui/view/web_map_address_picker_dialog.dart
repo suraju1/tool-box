@@ -50,6 +50,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   final TextEditingController _floorController = TextEditingController();
   final TextEditingController _areaController = TextEditingController();
   final TextEditingController _mapSearchController = TextEditingController();
+  final TextEditingController _customLabelController = TextEditingController();
   String _selectedLabel = 'Home';
   String _orderFor = 'Myself';
   double _radius = 5.0; // km
@@ -76,6 +77,16 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
     } else {
       _initLocation();
     }
+  }
+
+  @override
+  void dispose() {
+    _houseController.dispose();
+    _floorController.dispose();
+    _areaController.dispose();
+    _mapSearchController.dispose();
+    _customLabelController.dispose();
+    super.dispose();
   }
 
   void _initEditAddress() {
@@ -830,15 +841,27 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
       ToastService.showErrorToast(context, 'Please enter house/building name');
       return;
     }
+    if (_selectedLabel == 'Other' &&
+        _customLabelController.text.trim().isEmpty) {
+      ToastService.showErrorToast(context, 'Please enter a custom label');
+      return;
+    }
+
+    String customLabelStr = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
+        ? "${_customLabelController.text.trim()} - "
+        : "";
 
     final fullAddress =
-        "${_houseController.text}, ${_floorController.text.isNotEmpty ? "${_floorController.text}, " : ""}$_currentAddress";
+        "$customLabelStr${_houseController.text}, ${_floorController.text.isNotEmpty ? "${_floorController.text}, " : ""}$_currentAddress";
+
+    String finalLabel = _selectedLabel.toLowerCase();
+
     final addressController = context.read<AddressController>();
 
     if (widget.editAddress != null) {
       final updatedAddress = AddressModel(
         id: widget.editAddress!.id,
-        label: _selectedLabel,
+        label: finalLabel,
         address: fullAddress,
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
@@ -855,6 +878,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
               _lastMapPosition.longitude,
               fullAddress,
               radius: _radius,
+              label: finalLabel,
             );
         ToastService.showSuccessToast(context, 'Address updated successfully');
         Navigator.pop(context);
@@ -863,7 +887,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
       }
     } else {
       final newAddress = AddressModel(
-        label: _selectedLabel,
+        label: finalLabel,
         address: fullAddress,
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
@@ -880,6 +904,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
               _lastMapPosition.longitude,
               fullAddress,
               radius: _radius,
+              label: finalLabel,
             );
         ToastService.showSuccessToast(context, 'Address saved successfully');
         Navigator.pop(context);

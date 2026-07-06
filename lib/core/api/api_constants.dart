@@ -85,6 +85,8 @@ class ApiConstants {
 
   // static const String reactivatePost = 'reactivate_post/{{postid}}'; //put
   static const String subscribe = 'subscribe'; //post
+  static const String createOrder = 'create_order'; //post
+  static const String verifyPayment = 'verify_payment'; //post
   static const String mySubscription = 'my_subscription'; //get
   static const String mySubscriptionHistory = 'my_subscription_history'; //get
   static const String viewSubscriptions = 'view_subscriptions'; //get

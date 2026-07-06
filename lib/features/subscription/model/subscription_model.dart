@@ -189,3 +189,57 @@ class AvailablePlan {
     );
   }
 }
+
+class CreateOrderResponse {
+  final bool success;
+  final String? orderId;
+  final int amount;
+  final String currency;
+  final CreateOrderData? subscription;
+  final String message;
+
+  CreateOrderResponse({
+    required this.success,
+    this.orderId,
+    this.amount = 0,
+    this.currency = 'INR',
+    this.subscription,
+    this.message = '',
+  });
+
+  factory CreateOrderResponse.fromJson(Map<String, dynamic> json) {
+    return CreateOrderResponse(
+      success: json['success'] ?? false,
+      orderId: json['order_id']?.toString(),
+      amount: json['amount'] ?? 0,
+      currency: json['currency'] ?? 'INR',
+      subscription: json['subscription'] != null
+          ? CreateOrderData.fromJson(json['subscription'])
+          : null,
+      message: json['message'] ?? '',
+    );
+  }
+}
+
+class CreateOrderData {
+  final int id;
+  final String name;
+  final String price;
+  final int days;
+
+  CreateOrderData({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.days,
+  });
+
+  factory CreateOrderData.fromJson(Map<String, dynamic> json) {
+    return CreateOrderData(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      price: json['price']?.toString() ?? '0.00',
+      days: json['days'] ?? 0,
+    );
+  }
+}

@@ -13,14 +13,16 @@ import 'package:tool_bocs/features/login_and_signup/controller/auth_controller.d
 import 'package:tool_bocs/features/login_and_signup/model/user_model.dart';
 
 class LocationSelectionSheet extends StatefulWidget {
-  const LocationSelectionSheet({super.key});
+  final bool isPickOnly;
+  final double? initialRadius;
+  const LocationSelectionSheet({super.key, this.isPickOnly = false, this.initialRadius});
 
-  static Future<void> show(BuildContext context) {
+  static Future<void> show(BuildContext context, {bool isPickOnly = false, double? initialRadius}) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const LocationSelectionSheet(),
+      builder: (context) => LocationSelectionSheet(isPickOnly: isPickOnly, initialRadius: initialRadius),
     );
   }
 
@@ -72,7 +74,10 @@ class _LocationSelectionSheetState extends State<LocationSelectionSheet> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MapAddressPickerScreen(),
+                        builder: (context) => MapAddressPickerScreen(
+                          isPickOnly: false, // Always allow saving new address
+                          initialRadius: widget.initialRadius,
+                        ),
                       ),
                     );
                   },

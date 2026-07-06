@@ -22,6 +22,7 @@ class PostRequestModel {
   final bool isNegotiable;
   final int walletCredits;
   final bool notifyPartnersOnly;
+  final List<int>? notifyCollectionIds;
   final String postType; // "give" or "take"
   final List<dynamic> itemImages; // Paths or XFiles to images
   final List<dynamic> returnItemImages; // Paths or XFiles to return item images (if any)
@@ -52,6 +53,7 @@ class PostRequestModel {
     required this.isNegotiable,
     required this.walletCredits,
     required this.notifyPartnersOnly,
+    this.notifyCollectionIds,
     required this.postType,
     required this.itemImages,
     this.returnItemImages = const [],
@@ -81,6 +83,9 @@ class PostRequestModel {
     data['item_source'] = StringUtil.sanitizeForSql(itemSource);
     data['return_type'] = returnType.toString();
     data['notify_partners_only'] = notifyPartnersOnly.toString();
+    if (notifyCollectionIds != null && notifyCollectionIds!.isNotEmpty) {
+      data['notify_collection_ids'] = notifyCollectionIds!.join(',');
+    }
     data['item_category_id'] = itemCategoryId.toString();
     data['is_negotiable'] = isNegotiable.toString();
     data['wallet_credits'] = walletCredits.toString();

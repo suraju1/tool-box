@@ -63,9 +63,9 @@ class NotificationModel {
     final int parsedId = (rawId != null)
         ? (rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0)
         : (json["notification_title"].toString() +
-                  json["notification_message"].toString() +
-                  json["created_at"].toString())
-              .hashCode;
+                json["notification_message"].toString() +
+                json["created_at"].toString())
+            .hashCode;
 
     return NotificationModel(
       id: parsedId,
@@ -87,4 +87,3 @@ class NotificationModel {
     );
   }
 }
-

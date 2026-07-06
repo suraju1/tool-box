@@ -17,7 +17,8 @@ class ReviewItemWidget extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (review.reviewerId != null) {
-            ProfileController.navigateToUserProfile(context, review.reviewerId!);
+            ProfileController.navigateToUserProfile(
+                context, review.reviewerId!);
           }
         },
         child: Row(

@@ -447,51 +447,97 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                               }
                             }
                           } else {
-                            final success = await context
-                                .read<TradeController>()
-                                .reactivatePost(post.id);
-                            if (success && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Post reactivated successfully')));
-                              context.read<ProfileController>().getMyPosts();
-                            } else if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(context
-                                              .read<TradeController>()
-                                              .errorMessage ??
-                                          'Error reactivating post')));
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Reactivate Post'),
+                                content: const Text(
+                                    'Are you sure you want to reactivate this post? It will become visible to others again.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: Text(AppLocalizations.of(context)!.cancel),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text('Reactivate',
+                                        style: TextStyle(color: Colors.green)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              final success = await context
+                                  .read<TradeController>()
+                                  .reactivatePost(post.id);
+                              if (success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Post reactivated successfully')));
+                                context.read<ProfileController>().getMyPosts();
+                              } else if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(context
+                                                .read<TradeController>()
+                                                .errorMessage ??
+                                            'Error reactivating post')));
+                              }
                             }
                           }
                         },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 8.w, vertical: 4.h),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 85.w,
+                          height: 26.h,
                           decoration: BoxDecoration(
-                            color:
-                                isActive ? Colors.green : Colors.grey.shade400,
+                            color: isActive ? Colors.green : Colors.grey.shade400,
                             borderRadius: BorderRadius.circular(20.r),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Text(
-                                isActive ? 'Active' : 'Inactive',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.bold,
+                              AnimatedAlign(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                alignment: isActive
+                                    ? Alignment.centerLeft
+                                    : Alignment.centerRight,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 10.w),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: Text(
+                                      isActive ? 'Active' : 'Inactive',
+                                      key: ValueKey<bool>(isActive),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              SizedBox(width: 6.w),
-                              Container(
-                                width: 14.w,
-                                height: 14.w,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
+                              AnimatedAlign(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                                alignment: isActive
+                                    ? Alignment.centerRight
+                                    : Alignment.centerLeft,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 6.w),
+                                  child: Container(
+                                    width: 14.w,
+                                    height: 14.w,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],

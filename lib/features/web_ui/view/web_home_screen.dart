@@ -154,7 +154,7 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        AppLocalizations.of(context)!.home,
+                        (locationController.label ?? 'LOCATION').toUpperCase(),
                         style: TextStyle(
                           color: Theme.of(context).textTheme.bodyLarge?.color,
                           fontWeight: FontWeight.w700,

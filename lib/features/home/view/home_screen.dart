@@ -315,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: 'HOME - ',
+                              text: '${(locationController.label ?? "LOCATION").toUpperCase()} - ',
                               style: TextStyle(
                                 color: context.textColor,
                                 fontWeight: FontWeight.w800,
@@ -389,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
-                  SizedBox(width: 10.w),
+                  SizedBox(width: 24.w),
                   Text(
                     displayDistance,
                     style: TextStyle(
@@ -539,8 +539,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               isTake
-                                  ? AppLocalizations.of(context)!.userIsTaking(post.userName ?? 'User')
-                                  : AppLocalizations.of(context)!.userIsGiving(post.userName ?? 'User'),
+                                  ? AppLocalizations.of(context)!.userIsTaking((post.userName ?? 'User').split(' ').first)
+                                  : AppLocalizations.of(context)!.userIsGiving((post.userName ?? 'User').split(' ').first),
                               style: TextStyle(
                                   color: Colors.grey, fontSize: 11.sp),
                               maxLines: 1,
@@ -568,12 +568,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 14.sp,
                           ),
                           SizedBox(width: 4.w),
-                          Text(
-                            post.distanceKm != null
-                                ? AppLocalizations.of(context)!.kmAway(post.distanceKm!.toStringAsFixed(1))
-                                : AppLocalizations.of(context)!.unknownDistanceAway,
-                            style:
-                                TextStyle(color: Colors.grey, fontSize: 11.sp),
+                          Builder(
+                            builder: (context) {
+                              String distanceText = AppLocalizations.of(context)!.unknownDistanceAway;
+                              if (post.distanceKm != null) {
+                                if (post.distanceKm! < 1.0) {
+                                  distanceText = '${(post.distanceKm! * 1000).toInt()} mtrs away';
+                                } else {
+                                  distanceText = AppLocalizations.of(context)!.kmAway(post.distanceKm!.toStringAsFixed(1));
+                                }
+                              }
+                              return Text(
+                                distanceText,
+                                style: TextStyle(color: Colors.grey, fontSize: 11.sp),
+                              );
+                            },
                           ),
                           SizedBox(width: 4.w),
                           _buildPostMenu(context, post, isOwner),

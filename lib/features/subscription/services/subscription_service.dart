@@ -52,4 +52,40 @@ class SubscriptionService {
       rethrow;
     }
   }
+
+  /// Create Razorpay order for a subscription plan
+  Future<CreateOrderResponse> createOrder(int subscriptionId) async {
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.createOrder,
+        data: {'subscription_id': subscriptionId},
+      );
+      return CreateOrderResponse.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Verify Razorpay payment and activate subscription
+  Future<SubscriptionResponse> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+    required int subscriptionId,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.verifyPayment,
+        data: {
+          'razorpay_order_id': orderId,
+          'razorpay_payment_id': paymentId,
+          'razorpay_signature': signature,
+          'subscription_id': subscriptionId,
+        },
+      );
+      return SubscriptionResponse.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

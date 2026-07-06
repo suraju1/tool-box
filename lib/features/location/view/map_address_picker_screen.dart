@@ -56,6 +56,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   bool _isDefault = false;
   bool _isPanning = false;
   bool _isFetchingLocation = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -277,9 +278,9 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     if (_showFullForm) return const SizedBox.shrink();
 
     return Padding(
-      padding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 15.h),
+      padding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 8.h),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: context.onPrimaryColor.withOpacity(0.9),
           borderRadius: BorderRadius.circular(16.r),
@@ -311,7 +312,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 8.h),
+            SizedBox(height: 4.h),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 trackHeight: 4.h,
@@ -338,17 +339,18 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   }
 
   double _getZoomForRadius(double radius) {
-    if (radius <= 0.05) return 19.0;
-    if (radius <= 0.1) return 18.0;
-    if (radius <= 0.2) return 17.5;
-    if (radius <= 0.5) return 16.5;
-    if (radius <= 1) return 15.5;
-    if (radius <= 2) return 14.5;
-    if (radius <= 5) return 13.2;
-    if (radius <= 10) return 12.2;
-    if (radius <= 20) return 11.2;
-    if (radius <= 35) return 10.2;
-    return 9.5;
+    // Calculate zoom mathematically so the circle diameter is always around 220 pixels,
+    // fitting perfectly without overlapping the bottom UI.
+    double lat = _lastMapPosition.latitude;
+    if (lat == 0.0) lat = 18.5204; // Fallback to Pune coordinates if 0
+    
+    double cosLat = math.cos(lat * math.pi / 180);
+    double targetRadiusInPixels = 135.0; // Slightly larger diameter (270px)
+    
+    double term = (targetRadiusInPixels * 156543.03392 * cosLat) / (radius * 1000.0);
+    double zoom = math.log(term) / math.ln2;
+    
+    return zoom.clamp(1.0, 20.0);
   }
 
   Future<void> _updateCameraZoom(double radius) async {
@@ -356,14 +358,11 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
 
     final double zoom = _getZoomForRadius(radius);
 
-    // Extra zoom-out buffer so circle never cuts
-    final double adjustedZoom = zoom - 0.6;
-
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: _lastMapPosition,
-          zoom: adjustedZoom,
+          zoom: zoom,
         ),
       ),
     );
@@ -661,7 +660,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
+        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
         decoration: BoxDecoration(
           color: context.onPrimaryColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
@@ -682,7 +681,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
               child: Container(
                 width: 40.w,
                 height: 5.h,
-                margin: EdgeInsets.only(bottom: 15.h),
+                margin: EdgeInsets.only(bottom: 8.h),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade400,
                   borderRadius: BorderRadius.circular(4.r),
@@ -705,7 +704,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       children: [
         Text(AppLocalizations.of(context)!.findingProductsIn,
             style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
-        SizedBox(height: 10.h),
+        SizedBox(height: 6.h),
         Container(
           padding: EdgeInsets.all(12.w),
           decoration: BoxDecoration(
@@ -762,9 +761,11 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                       width: double.infinity,
                       height: 46.h,
                       child: ElevatedButton(
-                        onPressed: widget.isPickOnly
-                            ? _onConfirmLocation
-                            : _onDirectSave,
+                        onPressed: _isSaving
+                            ? null
+                            : (widget.isPickOnly
+                                ? _onConfirmLocation
+                                : _onDirectSave),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: context.primaryColor,
                           shape: RoundedRectangleBorder(
@@ -773,14 +774,23 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                                widget.isPickOnly
-                                    ? 'Confirm Location'
-                                    : 'Save Location',
-                                style: TextStyle(
-                                    color: context.onPrimaryColor,
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.bold)),
+                            _isSaving
+                                ? SizedBox(
+                                    width: 20.sp,
+                                    height: 20.sp,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: context.onPrimaryColor,
+                                    ),
+                                  )
+                                : Text(
+                                    widget.isPickOnly
+                                        ? 'Confirm Location'
+                                        : 'Save Location',
+                                    style: TextStyle(
+                                        color: context.onPrimaryColor,
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -811,10 +821,11 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     }
 
     final addressController = context.read<AddressController>();
+    String customLabelStr = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
+        ? "${_customLabelController.text.trim()} - "
+        : "";
     String finalLabel = _selectedLabel.toLowerCase();
-    String finalAddress = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
-        ? "${_customLabelController.text.trim()} - $_currentAddress"
-        : _currentAddress;
+    String finalAddress = "$customLabelStr$_currentAddress";
 
     if (widget.editAddress != null) {
       final updatedAddress = AddressModel(
@@ -826,15 +837,19 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         isDefault: 1,
       );
 
+      setState(() => _isSaving = true);
       addressController
           .updateAddress(updatedAddress.id!, updatedAddress)
           .then((response) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
         if (response.success) {
           context.read<LocationController>().setLocation(
                 _lastMapPosition.latitude,
                 _lastMapPosition.longitude,
-                _currentAddress,
+                finalAddress,
                 radius: _radius,
+                label: finalLabel,
               );
           ToastService.showSuccessToast(
               context, 'Address updated successfully');
@@ -852,13 +867,17 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         isDefault: addressController.addresses.isEmpty ? 1 : 0,
       );
 
+      setState(() => _isSaving = true);
       addressController.saveAddress(newAddress).then((response) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
         if (response.success) {
           context.read<LocationController>().setLocation(
                 _lastMapPosition.latitude,
                 _lastMapPosition.longitude,
-                _currentAddress,
+                finalAddress,
                 radius: _radius,
+                label: finalLabel,
               );
           ToastService.showSuccessToast(context, 'Address saved successfully');
           Navigator.pop(context);
@@ -1085,17 +1104,26 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       width: double.infinity,
       height: 50.h,
       child: ElevatedButton(
-        onPressed: _onSave,
+        onPressed: _isSaving ? null : _onSave,
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primaryColor,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         ),
-        child: Text(AppLocalizations.of(context)!.saveAddress,
-            style: TextStyle(
-                color: context.onPrimaryColor,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold)),
+        child: _isSaving
+            ? SizedBox(
+                width: 20.sp,
+                height: 20.sp,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: context.onPrimaryColor,
+                ),
+              )
+            : Text(AppLocalizations.of(context)!.saveAddress,
+                style: TextStyle(
+                    color: context.onPrimaryColor,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -1111,12 +1139,12 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       return;
     }
 
-    String customPrefix = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
+    String customLabelStr = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
         ? "${_customLabelController.text.trim()} - "
         : "";
 
     final fullAddress =
-        "$customPrefix${_houseController.text}, ${_floorController.text.isNotEmpty ? "${_floorController.text}, " : ""}$_currentAddress";
+        "$customLabelStr${_houseController.text}, ${_floorController.text.isNotEmpty ? "${_floorController.text}, " : ""}$_currentAddress";
 
     String finalLabel = _selectedLabel.toLowerCase();
 
@@ -1134,15 +1162,19 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         isDefault: _isDefault ? 1 : 0,
       );
 
+      setState(() => _isSaving = true);
       addressController
           .updateAddress(updatedAddress.id!, updatedAddress)
           .then((response) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
         if (response.success) {
           context.read<LocationController>().setLocation(
                 _lastMapPosition.latitude,
                 _lastMapPosition.longitude,
                 fullAddress,
                 radius: _radius,
+                label: finalLabel,
               );
 
           ToastService.showSuccessToast(
@@ -1163,13 +1195,17 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
             _isDefault ? 1 : (addressController.addresses.isEmpty ? 1 : 0),
       );
 
+      setState(() => _isSaving = true);
       addressController.saveAddress(newAddress).then((response) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
         if (response.success) {
           context.read<LocationController>().setLocation(
                 _lastMapPosition.latitude,
                 _lastMapPosition.longitude,
                 fullAddress,
                 radius: _radius,
+                label: finalLabel,
               );
 
           ToastService.showSuccessToast(context, 'Address saved successfully');

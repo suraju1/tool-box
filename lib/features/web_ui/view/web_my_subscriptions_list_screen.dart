@@ -149,8 +149,8 @@ class _WebMySubscriptionsListScreenState
             child: Container(
               height: 200,
               width: 200,
-              decoration: const BoxDecoration(
-                color: Colors.white12,
+              decoration: BoxDecoration(
+                color: context.onPrimaryColor.withOpacity(0.05),
                 shape: BoxShape.circle,
               ),
             ),
@@ -166,7 +166,7 @@ class _WebMySubscriptionsListScreenState
                     Text(
                       AppLocalizations.of(context)!.currentPlan1,
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: context.onPrimaryColor.withOpacity(0.7),
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5,
@@ -176,13 +176,13 @@ class _WebMySubscriptionsListScreenState
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: context.onPrimaryColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         subscription.status.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.onPrimaryColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
                         ),
@@ -193,8 +193,8 @@ class _WebMySubscriptionsListScreenState
                 const SizedBox(height: 16),
                 Text(
                   subscription.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.onPrimaryColor,
                     fontSize: 40,
                     fontWeight: FontWeight.w800,
                   ),
@@ -202,8 +202,8 @@ class _WebMySubscriptionsListScreenState
                 const SizedBox(height: 16),
                 Text(
                   'Expires on $expiryDate',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style: TextStyle(
+                    color: context.onPrimaryColor.withOpacity(0.7),
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -264,7 +264,7 @@ class _WebMySubscriptionsListScreenState
           child: Text(
             label,
             style: TextStyle(
-              color: isActive ? Colors.white : context.subTextColor,
+              color: isActive ? context.onPrimaryColor : context.subTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),

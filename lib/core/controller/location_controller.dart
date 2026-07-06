@@ -9,6 +9,7 @@ class LocationController extends ChangeNotifier {
   double? _longitude;
   String? _address;
   String? _city;
+  String? _label;
   bool _isLoading = false;
   String? _errorMessage;
   double _radius = 5.0; // Default 5km
@@ -18,6 +19,7 @@ class LocationController extends ChangeNotifier {
   static const double _defaultLongitude = 73.8567;
   static const String _defaultAddress = "Pune, Maharashtra, India";
   static const String _defaultCity = "Pune";
+  static const String _defaultLabel = "LOCATION";
 
   LocationController() {
     _loadFromCache();
@@ -30,6 +32,7 @@ class LocationController extends ChangeNotifier {
       _longitude = double.tryParse(cached['lng']!);
       _address = cached['address'];
       _city = cached['city'];
+      _label = cached['label'];
     }
   }
 
@@ -38,6 +41,7 @@ class LocationController extends ChangeNotifier {
   double? get longitude => _longitude;
   String? get address => _address;
   String? get city => _city;
+  String? get label => _label ?? "LOCATION";
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   double get radius => _radius;
@@ -49,6 +53,7 @@ class LocationController extends ChangeNotifier {
     _longitude = _defaultLongitude;
     _address = _defaultAddress;
     _city = _defaultCity;
+    _label = _defaultLabel;
     _persistCurrentLocation();
     notifyListeners();
   }
@@ -138,10 +143,11 @@ class LocationController extends ChangeNotifier {
   }
 
   /// Set location manually
-  void setLocation(double lat, double lng, String address, {double? radius}) {
+  void setLocation(double lat, double lng, String address, {double? radius, String? label}) {
     _latitude = lat;
     _longitude = lng;
     _address = address;
+    _label = label;
     if (radius != null) {
       _radius = radius;
     }
@@ -169,6 +175,7 @@ class LocationController extends ChangeNotifier {
       'lng': _longitude.toString(),
       'address': _address ?? '',
       'city': _city ?? '',
+      'label': _label ?? 'LOCATION',
     });
   }
 
@@ -184,6 +191,7 @@ class LocationController extends ChangeNotifier {
       _latitude = double.tryParse(lat);
       _longitude = double.tryParse(lng);
       _address = address;
+      _label = 'HOME';
 
       // Also try to get city if coordinates are valid
       if (_latitude != null && _longitude != null) {
@@ -206,6 +214,7 @@ class LocationController extends ChangeNotifier {
       _latitude = addressModel.latitude;
       _longitude = addressModel.longitude;
       _address = addressModel.address;
+      _label = addressModel.label;
 
       // Also try to get city if coordinates are valid
       if (_latitude != null && _longitude != null) {

@@ -156,13 +156,59 @@ class PostModel {
       userName: json['user_name']?.toString() ?? '',
       userImage: json['user_image']?.toString(),
       userRating: double.tryParse(json['user_rating']?.toString() ?? ''),
-      distanceKm: double.tryParse(json['distance_km']?.toString() ?? ''),
+      distanceKm: double.tryParse(json['distance_km']?.toString() ?? '') ??
+                  double.tryParse(json['distance']?.toString() ?? ''),
       responseCount: int.tryParse(json['response_count']?.toString() ?? ''),
       hasResponded: json['is_responded'] == 1 ||
           json['is_responded'] == true ||
           json['has_responded'] == 1 ||
           json['has_responded'] == true,
       userCreatedAt: json['user_created_at']?.toString(),
+    );
+  }
+
+  PostModel copyWith({
+    double? distanceKm,
+  }) {
+    return PostModel(
+      id: id,
+      userId: userId,
+      pickupArea: pickupArea,
+      latitude: latitude,
+      longitude: longitude,
+      areaDiameter: areaDiameter,
+      tradeType: tradeType,
+      itemName: itemName,
+      itemCategory: itemCategory,
+      itemCategoryId: itemCategoryId,
+      itemCondition: itemCondition,
+      itemNote: itemNote,
+      itemSource: itemSource,
+      itemImages: itemImages,
+      returnType: returnType,
+      priceMin: priceMin,
+      priceMax: priceMax,
+      isNegotiable: isNegotiable,
+      returnItemName: returnItemName,
+      returnItemCategory: returnItemCategory,
+      returnItemCondition: returnItemCondition,
+      returnItemDescription: returnItemDescription,
+      returnItemSource: returnItemSource,
+      returnItemImages: returnItemImages,
+      walletCredits: walletCredits,
+      notifyPartnersOnly: notifyPartnersOnly,
+      postType: postType,
+      status: status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      flowId: flowId,
+      userName: userName,
+      userImage: userImage,
+      userRating: userRating,
+      distanceKm: distanceKm ?? this.distanceKm,
+      responseCount: responseCount,
+      hasResponded: hasResponded,
+      userCreatedAt: userCreatedAt,
     );
   }
 }

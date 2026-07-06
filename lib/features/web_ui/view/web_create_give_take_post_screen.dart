@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:tool_bocs/core/controller/location_controller.dart';
-import 'package:tool_bocs/features/location/view/map_address_picker_screen.dart';
+import 'package:tool_bocs/features/location/view/location_selection_sheet.dart';
 import 'package:tool_bocs/features/trades/controller/trade_controller.dart';
 import 'package:tool_bocs/features/trades/model/category_model.dart';
 import 'package:tool_bocs/features/trades/model/post_request_model.dart';
@@ -14,9 +14,9 @@ import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/subscription/controller/subscription_controller.dart';
 import 'package:tool_bocs/features/web_ui/view/web_image_picker_dialog.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
-import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/features/web_ui/view/web_price_range_selector.dart';
+import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
 
 class WebCreateGivePostScreen extends StatefulWidget {
   const WebCreateGivePostScreen({super.key});
@@ -34,6 +34,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
   RangeValues _priceRange = const RangeValues(10, 50000);
   bool _isNegotiable = false;
   bool _notifyPartnersOnly = false;
+  List<int> _selectedCollectionIds = [];
   bool _isHomemade = false;
   bool _isStoreBought = false;
   String _returnSelectedCondition = 'New';
@@ -87,6 +88,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TradeController>().fetchCategories();
       context.read<SubscriptionController>().fetchMySubscription();
+      context.read<ProfileController>().getCollections();
       _initLocation();
     });
   }
@@ -222,7 +224,9 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                       children: [
                         _buildTradeDetailsSection(),
                         const SizedBox(height: 24),
-                        Divider(color: Theme.of(context).dividerColor, thickness: 1),
+                        Divider(
+                            color: Theme.of(context).dividerColor,
+                            thickness: 1),
                         const SizedBox(height: 24),
                         _buildWalletAndNotificationSection(),
                       ],
@@ -272,12 +276,9 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
         const SizedBox(height: 8),
         InkWell(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      MapAddressPickerScreen(isPickOnly: true, initialRadius: _diameter)),
-            ).then((_) => _updateLocationFromController());
+            LocationSelectionSheet.show(context,
+                    isPickOnly: true, initialRadius: _diameter)
+                .then((_) => _updateLocationFromController());
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -292,11 +293,28 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                     color: Colors.grey, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _pickupAddress,
+                  child: RichText(
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 16),
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${(context.watch<LocationController>().label ?? "LOCATION").toUpperCase()} - ',
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        TextSpan(
+                          text: context.watch<LocationController>().address ?? _pickupAddress,
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Text(
@@ -959,11 +977,66 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                   Switch(
                     value: _notifyPartnersOnly,
                     activeColor: Colors.green,
-                    onChanged: (val) =>
-                        setState(() => _notifyPartnersOnly = val),
+                    onChanged: (val) {
+                      setState(() {
+                        _notifyPartnersOnly = val;
+                        if (!val) {
+                          _selectedCollectionIds.clear();
+                        }
+                      });
+                    },
                   ),
                 ],
               ),
+              if (_notifyPartnersOnly) ...[
+                const SizedBox(height: 12),
+                Consumer<ProfileController>(
+                  builder: (context, profileCtrl, child) {
+                    if (profileCtrl.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (profileCtrl.collections.isEmpty) {
+                      return Text(
+                        "No saved collections found.",
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      );
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Select Collections",
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: profileCtrl.collections.map((collection) {
+                            final isSelected =
+                                _selectedCollectionIds.contains(collection.id);
+                            return FilterChip(
+                              label: Text(collection.name ?? 'Unknown'),
+                              selected: isSelected,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedCollectionIds.add(collection.id);
+                                  } else {
+                                    _selectedCollectionIds
+                                        .remove(collection.id);
+                                  }
+                                });
+                              },
+                              selectedColor: Colors.green.withOpacity(0.2),
+                              checkmarkColor: Colors.green,
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -1094,6 +1167,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
               0)
           .toInt(),
       notifyPartnersOnly: _notifyPartnersOnly,
+      notifyCollectionIds: _notifyPartnersOnly ? _selectedCollectionIds : null,
       postType: postType,
       itemImages: _itemImages,
       returnItemImages: _isPriceSelected ? [] : _returnItemImages,
@@ -1347,7 +1421,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
         const SizedBox(width: 24),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 24,
               fontFamily: FontFamily.openSans),

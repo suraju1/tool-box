@@ -132,6 +132,94 @@ class SubscriptionController extends ChangeNotifier {
     }
   }
 
+  /// Cancel activation loading state (e.g. when payment popup is closed or fails)
+  void cancelActivation() {
+    if (_isActivating) {
+      _isActivating = false;
+      _activatingPlanId = null;
+      notifyListeners();
+    }
+  }
+
+  /// Create Razorpay order for subscription plan
+  Future<CreateOrderResponse?> createOrder(int subscriptionId) async {
+    _isActivating = true;
+    _activatingPlanId = subscriptionId;
+    _errorMessage = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _subscriptionService.createOrder(subscriptionId);
+      if (response.success && response.orderId != null) {
+        return response;
+      } else {
+        _errorMessage = response.message.isNotEmpty
+            ? response.message
+            : "Failed to create order";
+        _isActivating = false;
+        _activatingPlanId = null;
+        notifyListeners();
+        return null;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      _isActivating = false;
+      _activatingPlanId = null;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _errorMessage = "An unexpected error occurred while creating order";
+      _isActivating = false;
+      _activatingPlanId = null;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Verify Razorpay payment and activate subscription
+  Future<bool> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+    required int subscriptionId,
+  }) async {
+    _isActivating = true;
+    _activatingPlanId = subscriptionId;
+    _errorMessage = null;
+    _successMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _subscriptionService.verifyPayment(
+        orderId: orderId,
+        paymentId: paymentId,
+        signature: signature,
+        subscriptionId: subscriptionId,
+      );
+      if (response.success) {
+        _successMessage = response.message;
+        await fetchMySubscription();
+        return true;
+      } else {
+        _errorMessage = response.message.isNotEmpty
+            ? response.message
+            : "Payment verification failed";
+        return false;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } catch (e) {
+      _errorMessage = "An unexpected error occurred during payment verification";
+      return false;
+    } finally {
+      _isActivating = false;
+      _activatingPlanId = null;
+      notifyListeners();
+    }
+  }
+
   /// Fetch all available subscription plans
   Future<void> fetchAvailablePlans() async {
     _isPlansLoading = true;

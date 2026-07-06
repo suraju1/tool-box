@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
@@ -25,6 +26,8 @@ class SaveToCollectionBottomSheet extends StatefulWidget {
 }
 
 class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomSheet> {
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +90,8 @@ class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomShee
                           final collection = collections[index];
                           return InkWell(
                             onTap: () async {
+                              if (_isSaving) return;
+                              if (mounted) setState(() => _isSaving = true);
                               final response = await context
                                   .read<ProfileController>()
                                   .addCollectionItem(collection.id, 'profile', widget.userId);
@@ -129,8 +134,96 @@ class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomShee
                         },
                       ),
           ),
+          SizedBox(height: 20.h),
+          InkWell(
+            onTap: () {
+              _showCreateFolderDialog(context);
+            },
+            borderRadius: BorderRadius.circular(50.r),
+            child: Container(
+              width: 80.w,
+              height: 80.w,
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.add,
+                size: 32.sp,
+                color: context.textColor,
+              ),
+            ),
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            AppLocalizations.of(context)!.createNewFolder,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: context.textColor,
+              fontFamily: FontFamily.openSans,
+            ),
+          ),
+          SizedBox(height: 10.h),
         ],
       ),
+    );
+  }
+
+  void _showCreateFolderDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: context.surfaceColor,
+          title: Text(
+            AppLocalizations.of(context)!.createNewFolder,
+            style: TextStyle(color: context.textColor, fontFamily: FontFamily.openSans),
+          ),
+          content: TextField(
+            controller: nameController,
+            style: TextStyle(color: context.textColor),
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.folderName,
+              hintStyle: TextStyle(color: context.textColor.withOpacity(0.5)),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: context.dividerColor),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: context.primaryColor),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context)!.cancel, style: TextStyle(color: context.textColor)),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (nameController.text.trim().isNotEmpty) {
+                  Navigator.pop(context);
+                  final res = await context.read<ProfileController>().createCollection(nameController.text.trim());
+                  if (res.success) {
+                    if (context.mounted) ToastService.showSuccessToast(context, AppLocalizations.of(context)!.collectionCreatedSuccessfully);
+                  } else {
+                    if (context.mounted) ToastService.showErrorToast(context, res.message ?? AppLocalizations.of(context)!.failedToCreateCollection);
+                  }
+                }
+              },
+              child: Text(AppLocalizations.of(context)!.create, style: TextStyle(color: context.primaryColor)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:tool_bocs/core/api/api_constants.dart';
 import 'package:tool_bocs/core/widgets/app_cached_image.dart';
 import 'package:tool_bocs/core/widgets/share_button.dart';
+import 'package:tool_bocs/core/services/share_service.dart';
+import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/trades/controller/trade_controller.dart';
 import 'package:tool_bocs/core/controller/location_controller.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
@@ -98,31 +100,52 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               if (post == null) return const SizedBox.shrink();
               return Row(
                 children: [
-                  ShareButton(
-                    post: post,
-                    includeImage: true,
-                    style: ShareButtonStyle.icon,
-                  ),
                   Consumer<AuthController>(
                     builder: (context, authController, _) {
                       final isOwner =
                           authController.currentUser?.id == post.userId;
-                      if (isOwner) return const SizedBox.shrink();
                       return PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert,
                             color: context.textColor, size: 20.sp),
-                        onSelected: (value) {
-                          if (value == 'report') {
+                        onSelected: (value) async {
+                          if (value == 'share') {
+                            try {
+                              await ShareService().sharePost(
+                                context,
+                                post: post,
+                                includeImage: true,
+                              );
+                            } catch (e) {
+                              if (context.mounted) {
+                                ToastService.showErrorToast(context, 'Unable to share. Try again.');
+                              }
+                            }
+                          } else if (value == 'report') {
                             ReportPostSheet.show(context, post.id);
                           }
                         },
                         itemBuilder: (context) => [
                           PopupMenuItem<String>(
-                            value: 'report',
-                            child: Text(
-                                AppLocalizations.of(context)!.reportPost,
-                                style: TextStyle(color: Colors.red)),
+                            value: 'share',
+                            child: Row(
+                              children: [
+                                Icon(Icons.share_outlined, color: context.textColor, size: 20.sp),
+                                SizedBox(width: 10.w),
+                                Text(AppLocalizations.of(context)!.sharePost, style: TextStyle(color: context.textColor)),
+                              ],
+                            ),
                           ),
+                          if (!isOwner)
+                            PopupMenuItem<String>(
+                              value: 'report',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.report_problem_outlined, color: Colors.red, size: 20.sp),
+                                  SizedBox(width: 10.w),
+                                  Text(AppLocalizations.of(context)!.reportPost, style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
                         ],
                       );
                     },
@@ -176,7 +199,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 _buildOwnerProfile(post),
                 SizedBox(height: 10.h),
                 if (images.isNotEmpty)
-                  _buildImageCarousel(images, post.itemCategory)
+                  _buildImageCarousel(images, post.itemCategory, post.tradeType)
                 else
                   Stack(
                     children: [
@@ -194,6 +217,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         top: 10.h,
                         left: 10.w,
                         child: _buildCategoryTag(post.itemCategory),
+                      ),
+                      Positioned(
+                        top: 10.h,
+                        right: 10.w,
+                        child: _buildTradeTypeTag(post.tradeType),
                       ),
                     ],
                   ),
@@ -545,7 +573,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildImageCarousel(List<String> images, String category) {
+  Widget _buildImageCarousel(List<String> images, String category, String tradeType) {
     return Column(
       children: [
         Container(
@@ -609,6 +637,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 left: 10.w,
                 child: _buildCategoryTag(category),
               ),
+              Positioned(
+                top: 10.h,
+                right: 10.w,
+                child: _buildTradeTypeTag(tradeType),
+              ),
             ],
           ),
         ),
@@ -641,6 +674,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               : context.isDarkMode
                   ? Colors.black
                   : Colors.white,
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w500,
+          fontFamily: FontFamily.openSans,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTradeTypeTag(String tradeType) {
+    if (tradeType.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: context.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      child: Text(
+        tradeType,
+        style: TextStyle(
+          color: context.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade800,
           fontSize: 10.sp,
           fontWeight: FontWeight.w500,
           fontFamily: FontFamily.openSans,
@@ -955,16 +1008,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       //   ),
                       // ),
                       // SizedBox(width: 8.w),
-                      Text(
-                        'Verified User',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w500,
-                          color: context.subTextColor,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          String distanceText = '- km away';
+                          if (post.distanceKm != null) {
+                            if (post.distanceKm! < 1.0) {
+                              distanceText = '${(post.distanceKm! * 1000).toInt()} mtrs away';
+                            } else {
+                              distanceText = AppLocalizations.of(context)!.kmAway(post.distanceKm!.toStringAsFixed(1));
+                            }
+                          }
+                          return Text(
+                            distanceText,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w500,
+                              color: context.subTextColor,
+                            ),
+                          );
+                        },
                       ),
-                      SizedBox(width: 4.w),
-                      Icon(Icons.verified, color: Colors.blue, size: 14.sp),
                       const Spacer(),
                       Text(
                         DateUtil.formatTimeAgo(post.createdAt),
