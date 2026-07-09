@@ -152,7 +152,7 @@
   "tryChangingTheFilterOr": "Try changing the filter or create a new post!",
   "createPost": "Create Post",
   "deactivatePost": "Deactivate Post",
-  "areYouSureYouWant5": "Are you sure you want to deactivate this post? Deactivating it will permanently delete your post.",
+  "areYouSureYouWant5": "Are you sure you want to deactivate this post? It will be hidden from other users and moved to your Inactive list.",
   "deactivate": "Deactivate",
   "postDeactivatedSuccessfully": "Post deactivated successfully",
   "postReactivatedSuccessfully": "Post reactivated successfully",

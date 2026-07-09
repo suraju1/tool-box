@@ -542,30 +542,36 @@ class WebProfileScreen extends StatelessWidget {
                   SizedBox(
                       width: cardWidth,
                       child: _buildTradeHistoryCard(
-                          Icons.handshake,
-                          Colors.blue,
+                          Icons.sync,
+                          Colors.greenAccent.shade700,
                           "${tradeStats?.totalTrades ?? 0}",
-                          "Total Trades",
+                          AppLocalizations.of(context)!.totalTrades,
                           innerCardBgColor,
-                          isDark)),
+                          isDark,
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.tradeHistory))),
                   SizedBox(
                       width: cardWidth,
                       child: _buildTradeHistoryCard(
                           Icons.outbox_outlined,
-                          Colors.red,
+                          Colors.orange,
                           "${tradeStats?.sentOffers ?? 0}",
-                          "Sent Offers",
+                          AppLocalizations.of(context)!.sentOffers,
                           innerCardBgColor,
-                          isDark)),
+                          isDark,
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.tradeHistory))),
                   SizedBox(
                       width: cardWidth,
                       child: _buildTradeHistoryCard(
                           Icons.move_to_inbox_outlined,
-                          Colors.orange,
+                          Colors.red,
                           "${tradeStats?.receivedOffers ?? 0}",
-                          "Received Offers",
+                          AppLocalizations.of(context)!.receivedOffers,
                           innerCardBgColor,
-                          isDark)),
+                          isDark,
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.tradeHistory))),
                 ],
               );
             },
@@ -607,33 +613,40 @@ class WebProfileScreen extends StatelessWidget {
   }
 
   Widget _buildTradeHistoryCard(IconData icon, Color iconColor, String value,
-      String title, Color bgColor, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 8),
-      decoration: BoxDecoration(
-        color: bgColor,
+      String title, Color bgColor, bool isDark, {VoidCallback? onTap}) {
+    return Material(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: iconColor, size: 36),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
           ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade800),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: 36),
+              const SizedBox(height: 16),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade800),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

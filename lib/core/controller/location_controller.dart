@@ -185,11 +185,25 @@ class LocationController extends ChangeNotifier {
     required String? lng,
     required String? address,
   }) async {
-    if (lat == null || lng == null) return;
-
     try {
-      _latitude = double.tryParse(lat);
-      _longitude = double.tryParse(lng);
+      double? parsedLat = lat != null ? double.tryParse(lat) : null;
+      double? parsedLng = lng != null ? double.tryParse(lng) : null;
+
+      // If coordinates are missing, invalid, or 0.0, but we have a valid address, geocode it!
+      if ((parsedLat == null || parsedLng == null || (parsedLat == 0.0 && parsedLng == 0.0)) &&
+          address != null &&
+          address.isNotEmpty &&
+          address != 'Location unavailable') {
+        final coords = await LocationService.getCoordinatesFromAddress(address);
+        if (coords != null) {
+          parsedLat = coords['latitude'];
+          parsedLng = coords['longitude'];
+          debugPrint('[LocationController] Geocoded address "$address" -> $parsedLat, $parsedLng');
+        }
+      }
+
+      _latitude = parsedLat;
+      _longitude = parsedLng;
       _address = address;
       _label = 'HOME';
 

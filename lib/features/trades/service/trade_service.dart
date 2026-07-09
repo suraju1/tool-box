@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:convert';
 import 'package:tool_bocs/core/api/api_client.dart';
 import 'package:tool_bocs/core/api/api_constants.dart';
 import 'package:tool_bocs/features/trades/model/category_model.dart';
@@ -221,6 +222,29 @@ class TradeService {
     }
   }
 
+  Future<ApiResponse<dynamic>> deactivatePost(int id) async {
+    try {
+      final response = await _apiClient.put(
+        ApiConstants.deactivatePost.replaceAll('{{postId}}', id.toString()),
+      );
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return ApiResponse(
+          success: data['success'] ?? false,
+          message: data['message'] ?? 'Post deactivated successfully',
+          data: data['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
   // --- 4-Step Trade Flow Methods ---
 
   Future<ApiResponse<dynamic>> respondToPost(
@@ -264,6 +288,7 @@ class TradeService {
 
       if (response.statusCode == 200) {
         final data = response.data;
+        print('--- getPostResponses API RAW Response: ${jsonEncode(data)}');
         if (data['success'] == true) {
           final List<dynamic> list = data['data'] ?? [];
           final responses =
@@ -303,12 +328,19 @@ class TradeService {
     }
   }
 
-  Future<ApiResponse<List<TradeResponseModel>>> getMyPostResponses() async {
+  Future<ApiResponse<List<TradeResponseModel>>> getMyPostResponses({double? latitude, double? longitude}) async {
     try {
-      final response = await _apiClient.get(ApiConstants.getMyPostResponses);
+      final response = await _apiClient.get(
+        ApiConstants.getMyPostResponses,
+        queryParameters: {
+          if (latitude != null) 'latitude': latitude,
+          if (longitude != null) 'longitude': longitude,
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
+        print('--- getMyPostResponses API RAW Response: ${jsonEncode(data)}');
         if (data['success'] == true) {
           final List<TradeResponseModel> responses = [];
           for (var e in (data['data'] as List)) {
@@ -340,12 +372,19 @@ class TradeService {
     }
   }
 
-  Future<ApiResponse<List<TradeResponseModel>>> getMySentResponses() async {
+  Future<ApiResponse<List<TradeResponseModel>>> getMySentResponses({double? latitude, double? longitude}) async {
     try {
-      final response = await _apiClient.get(ApiConstants.getMyResponses);
+      final response = await _apiClient.get(
+        ApiConstants.getMyResponses,
+        queryParameters: {
+          if (latitude != null) 'latitude': latitude,
+          if (longitude != null) 'longitude': longitude,
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = response.data;
+        print('--- getMySentResponses API RAW Response: ${jsonEncode(data)}');
         if (data['success'] == true) {
           final List<TradeResponseModel> responses = [];
           for (var e in (data['data'] as List)) {

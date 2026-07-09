@@ -80,9 +80,11 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
     final profileController = context.watch<ProfileController>();
     UserProfileModel? userProfile = _userProfile;
     if (_userProfile != null) {
-      if (profileController.viewedProfile?.userDetails.id == _userProfile!.userDetails.id) {
+      if (profileController.viewedProfile?.userDetails.id ==
+          _userProfile!.userDetails.id) {
         userProfile = profileController.viewedProfile;
-      } else if (profileController.ownProfile?.userDetails.id == _userProfile!.userDetails.id) {
+      } else if (profileController.ownProfile?.userDetails.id ==
+          _userProfile!.userDetails.id) {
         userProfile = profileController.ownProfile;
       }
     }

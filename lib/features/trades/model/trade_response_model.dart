@@ -194,7 +194,11 @@ class TradeResponseModel {
       returnItemCondition: json['return_item_condition'],
       postReturnType: json['post_return_type'],
       paymentAmount: json['payment_amount']?.toString(),
-      distanceKm: double.tryParse(json['distance_km']?.toString() ?? json['distance']?.toString() ?? ''),
+      distanceKm: () {
+        final val = double.tryParse(json['distance_km']?.toString() ?? json['distance']?.toString() ?? '');
+        print('--- TradeResponseModel Parsing: id = ${json['id']}, distance_km = ${json['distance_km']}, distance = ${json['distance']}, parsed = $val');
+        return val;
+      }(),
     );
   }
 

@@ -230,4 +230,42 @@ class LocationService {
     
     return null;
   }
+
+  /// Get coordinates from address using geocoding
+  static Future<Map<String, double>?> getCoordinatesFromAddress(String address) async {
+    try {
+      if (!kIsWeb) {
+        List<Location> locations = await locationFromAddress(address);
+        if (locations.isNotEmpty) {
+          return {
+            'latitude': locations[0].latitude,
+            'longitude': locations[0].longitude,
+          };
+        }
+      }
+    } catch (e) {
+      debugPrint('Standard geocoding failed: $e');
+    }
+
+    // Fallback for Web or if native geocoding fails
+    try {
+      const apiKey = 'AIzaSyDcGPon7dpfONgGUw8lBMOXveihNhaepVo';
+      final url = 'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(address)}&key=$apiKey';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'OK' && data['results'] != null && data['results'].isNotEmpty) {
+          final loc = data['results'][0]['geometry']['location'];
+          return {
+            'latitude': (loc['lat'] as num).toDouble(),
+            'longitude': (loc['lng'] as num).toDouble(),
+          };
+        }
+      }
+    } catch (e) {
+      debugPrint('Fallback geocoding failed: $e');
+    }
+
+    return null;
+  }
 }

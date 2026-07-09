@@ -665,4 +665,5 @@ class ProfileController extends ChangeNotifier {
     await getMyPosts(
         postType: postType, label: _selectedMyPostsFilter, isRefresh: false);
   }
+
 }

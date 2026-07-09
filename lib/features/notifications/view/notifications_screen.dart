@@ -12,6 +12,7 @@ import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/features/login_and_signup/controller/auth_controller.dart';
 import 'package:tool_bocs/features/chat/view/chat_screen.dart';
+import 'package:tool_bocs/core/controller/location_controller.dart';
 import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/notifications/controller/notification_controller.dart';
 import 'package:tool_bocs/features/notifications/model/notification_model.dart';
@@ -35,6 +36,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final tradeController = context.read<TradeController>();
       final notificationController = context.read<NotificationController>();
+      final locationController = context.read<LocationController>();
+
+      if (locationController.hasLocation) {
+        tradeController.setLocation(
+          locationController.latitude,
+          locationController.longitude,
+        );
+      }
 
       if (widget.postId != null) {
         tradeController.fetchPostResponses(widget.postId!);
@@ -339,6 +348,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         distanceStr = '~ ${response.distanceKm!.toStringAsFixed(1)} km away';
       }
     }
+
+    print('--- Mobile _buildResponseCard: id = ${response.id}, responderName = ${response.responderName}, distanceKm = ${response.distanceKm}, distanceStr = "$distanceStr"');
 
     if (isIncoming) {
       final postItem = response.postItemName ?? 'item';

@@ -558,7 +558,7 @@ class _WebGiveCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          "${post.userName} is requesting",
+                          "${(post.userName ?? 'User').split(' ').first} is requesting",
                           style: TextStyle(color: greyColor, fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

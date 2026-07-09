@@ -45,39 +45,48 @@ class _WebMySubscriptionsListScreenState
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 900),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 32),
-                  if (subscription != null) ...[
-                    _buildActivePlanHeader(context, subscription),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                     const SizedBox(height: 32),
+                    if (subscription != null) ...[
+                      _buildActivePlanHeader(context, subscription),
+                      const SizedBox(height: 32),
+                    ],
+                    _buildYearFilter(context),
+                    const SizedBox(height: 24),
+                    if (controller.isHistoryLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 60),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (history.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: _buildEmptyState(context, controller),
+                      )
+                    else
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 24,
+                          mainAxisSpacing: 24,
+                          childAspectRatio: 1.6,
+                        ),
+                        itemCount: history.length,
+                        itemBuilder: (context, index) {
+                          final item = history[index];
+                          return _buildInvoiceCard(context, item: item);
+                        },
+                      ),
                   ],
-                  _buildYearFilter(context),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: controller.isHistoryLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : history.isEmpty
-                            ? _buildEmptyState(context, controller)
-                            : GridView.builder(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 24,
-                                  mainAxisSpacing: 24,
-                                  childAspectRatio: 1.6,
-                                ),
-                                itemCount: history.length,
-                                itemBuilder: (context, index) {
-                                  final item = history[index];
-                                  return _buildInvoiceCard(context, item: item);
-                                },
-                              ),
-                  ),
-                ],
+                ),
               ),
             ),
           );

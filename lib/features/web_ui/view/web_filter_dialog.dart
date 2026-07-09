@@ -73,9 +73,9 @@ class _WebFilterDialogState extends State<WebFilterDialog> {
                   children: [
                     _buildCategorySection(),
                     const SizedBox(height: 20),
-                    _buildDistanceSection(),
-                    const SizedBox(height: 20),
                     _buildReturnTypeSection(),
+                    const SizedBox(height: 20),
+                    _buildDistanceSection(),
                     const SizedBox(height: 30),
                   ],
                 ),
@@ -281,7 +281,7 @@ class _WebFilterDialogState extends State<WebFilterDialog> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color:
                       isSelected ? context.primaryColor : context.surfaceColor,

@@ -288,7 +288,7 @@ class WebProductCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          "${post.userName}'s ${isTake ? 'Taking' : 'Giving'}",
+                          "${(post.userName ?? 'User').split(' ').first}'s ${isTake ? 'Taking' : 'Giving'}",
                           style: TextStyle(color: greyColor, fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

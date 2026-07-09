@@ -44,6 +44,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   LatLng _lastMapPosition = const LatLng(18.5204, 73.8567); // Default Pune
   String _currentAddress = "Loading address...";
   bool _isReverseGeocoding = false;
+  bool _isPanning = false;
 
   // Form controllers
   final TextEditingController _houseController = TextEditingController();
@@ -66,6 +67,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
 
   bool _showFullForm = false;
   bool _isDefault = false;
+  bool _isMinimized = false;
 
   @override
   void initState() {
@@ -183,6 +185,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   }
 
   Future<void> _onCameraIdle() async {
+    setState(() => _isPanning = false);
     if (_isReverseGeocoding) return;
 
     setState(() => _isReverseGeocoding = true);
@@ -205,26 +208,24 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   }
 
   double _getZoomForRadius(double radius) {
-    if (radius <= 0.05) return 19.0;
-    if (radius <= 0.1) return 18.0;
-    if (radius <= 0.2) return 17.5;
-    if (radius <= 0.5) return 16.5;
-    if (radius <= 1) return 15.5;
-    if (radius <= 2) return 14.5;
-    if (radius <= 5) return 13.2;
-    if (radius <= 10) return 12.2;
-    if (radius <= 20) return 11.2;
-    if (radius <= 35) return 10.2;
-    return 9.5;
+    double lat = _lastMapPosition.latitude;
+    if (lat == 0.0) lat = 18.5204; // Fallback to Pune coordinates if 0
+    
+    double cosLat = math.cos(lat * math.pi / 180);
+    double targetRadiusInPixels = 100.0; // Optimized diameter (200px) so full circle is visible in middle
+    
+    double term = (targetRadiusInPixels * 156543.03392 * cosLat) / (radius * 1000.0);
+    double zoom = math.log(term) / math.ln2;
+    
+    return zoom.clamp(1.0, 20.0);
   }
 
   Future<void> _updateCameraZoom(double radius) async {
     final GoogleMapController controller = await _controller.future;
     final double zoom = _getZoomForRadius(radius);
-    final double adjustedZoom = zoom - 0.6;
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(target: _lastMapPosition, zoom: adjustedZoom),
+        CameraPosition(target: _lastMapPosition, zoom: zoom),
       ),
     );
   }
@@ -295,7 +296,10 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       backgroundColor: context.onPrimaryColor,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+        constraints: BoxConstraints(
+            maxWidth: 520,
+            maxHeight:
+                math.min(920, MediaQuery.of(context).size.height * 0.94)),
         child: Column(
           children: [
             _buildHeader(context),
@@ -303,7 +307,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
               child: Stack(
                 children: [
                   _buildMap(),
-                  _buildRadiusText(),
+                  _buildMarkerOverlay(),
                   _buildSearchOverlay(),
                   _buildUseCurrentLocationFloating(),
                 ],
@@ -367,72 +371,147 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
         },
+        onCameraMoveStarted: () {
+          setState(() => _isPanning = true);
+        },
         onCameraMove: _onCameraMove,
         onCameraIdle: _onCameraIdle,
         myLocationEnabled: true,
         myLocationButtonEnabled: false,
         zoomControlsEnabled: false,
         mapToolbarEnabled: false,
-        circles: {
-          Circle(
-            circleId: const CircleId('radius_circle'),
-            center: _lastMapPosition,
-            radius: _radius * 1000,
-            fillColor: Colors.black.withOpacity(0.3),
-            strokeColor: Colors.black,
-            strokeWidth: 2,
-          ),
-        },
-        polylines: {
-          Polyline(
-            polylineId: const PolylineId('radius_line'),
-            points: [
-              _lastMapPosition,
-              LatLng(
-                _lastMapPosition.latitude,
-                _lastMapPosition.longitude +
-                    (_radius /
-                        (111.32 *
-                            math.cos(
-                                _lastMapPosition.latitude * math.pi / 180))),
-              ),
-            ],
-            color: Colors.black,
-            width: 3,
-          ),
-        },
       ),
     );
   }
 
-  Widget _buildRadiusText() {
+  String _getShortAddressName(String fullAddress) {
+    if (fullAddress.isEmpty) return "Location";
+    final parts = fullAddress.split(',');
+    for (var part in parts) {
+      final trimmed = part.trim();
+      if (trimmed.isNotEmpty && !RegExp(r'^[\d\s\W]+$').hasMatch(trimmed)) {
+        if (trimmed.length <= 3 && RegExp(r'\d').hasMatch(trimmed)) {
+          continue;
+        }
+        return trimmed;
+      }
+    }
+    return parts.first.trim();
+  }
+
+  Widget _buildMarkerOverlay() {
+    if (_showFullForm) return const SizedBox.shrink();
+
+    // Smooth radius calculation
     final double metersPerPixel = 156543.03392 *
         math.cos(_lastMapPosition.latitude * math.pi / 180) /
         math.pow(2, _currentZoom);
+
     final double radiusInPixels =
         ((_radius * 1000) / metersPerPixel).clamp(0.0, 5000.0);
 
     return IgnorePointer(
-      child: Padding(
-        padding: EdgeInsets.zero,
-        child: Center(
-          child: Transform.translate(
-            offset: Offset(radiusInPixels / 2, 18),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                formattedRadius,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
+      child: Center(
+        child: OverflowBox(
+          maxWidth: double.infinity,
+          maxHeight: double.infinity,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Radius Circle
+              Container(
+                width: radiusInPixels * 2,
+                height: radiusInPixels * 2,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.black,
+                    width: 2,
+                  ),
                 ),
               ),
-            ),
+
+              // Radius Line
+              Transform.translate(
+                offset: Offset(radiusInPixels / 2, 0),
+                child: SizedBox(
+                  width: radiusInPixels,
+                  height: 16,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        height: 3,
+                        width: double.infinity,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Location Name Label (floating above the center)
+              if (!_isPanning && _currentAddress.isNotEmpty)
+                Transform.translate(
+                  offset: const Offset(0, -35),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: Offset(0, 3))
+                      ],
+                    ),
+                    child: Text(
+                      _getShortAddressName(_currentAddress),
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+
+              // Center Tick
+              Container(
+                width: 4,
+                height: 16,
+                color: Colors.black,
+              ),
+
+              // Radius Text
+              if (!_isPanning)
+                Transform.translate(
+                  offset: Offset(radiusInPixels / 2, 18),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      formattedRadius,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -566,13 +645,50 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   }
 
   Widget _buildBottomForm() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: _showFullForm
-            ? _buildDetailedAddressForm()
-            : _buildConfirmationView(),
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        if (details.primaryDelta! > 5) {
+          if (!_isMinimized && !_showFullForm) {
+            setState(() => _isMinimized = true);
+          }
+        } else if (details.primaryDelta! < -5) {
+          if (_isMinimized && !_showFullForm) {
+            setState(() => _isMinimized = false);
+          }
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Grab Handle
+            if (!_showFullForm)
+              Center(
+                child: InkWell(
+                  onTap: () {
+                    setState(() => _isMinimized = !_isMinimized);
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            SingleChildScrollView(
+              child: _showFullForm
+                  ? _buildDetailedAddressForm()
+                  : _buildConfirmationView(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -583,7 +699,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(AppLocalizations.of(context)!.findingProductsFor,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 15),
         Container(
           padding: const EdgeInsets.all(12),
@@ -602,7 +718,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _currentAddress.split(',').first,
+                      _getShortAddressName(_currentAddress),
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold),
                       maxLines: 1,
@@ -618,43 +734,75 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
                   ],
                 ),
               ),
-              TextButton(
-                onPressed: () => setState(() => _showFullForm = true),
-                child: Text(AppLocalizations.of(context)!.change,
-                    style: TextStyle(
-                        color: context.primaryColor,
-                        fontWeight: FontWeight.bold)),
-              ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: widget.isPickOnly
-                ? _onConfirmLocation
-                : () => setState(() => _showFullForm = true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primaryColor,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                    widget.isPickOnly
-                        ? 'Confirm Location'
-                        : 'Enter complete address',
-                    style: TextStyle(
-                        color: context.onPrimaryColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          alignment: Alignment.topCenter,
+          child: _isMinimized
+              ? const SizedBox.shrink()
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!widget.isPickOnly) ...[
+                      const SizedBox(height: 16),
+                      Text(AppLocalizations.of(context)!.saveAddressAs,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      _buildLabelSelector(),
+                      if (_selectedLabel == 'Other') ...[
+                        const SizedBox(height: 12),
+                        _buildTextField('Custom label (e.g. Gym, Cafe)', _customLabelController),
+                      ],
+                    ],
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        if (!widget.isPickOnly) ...[
+                          Expanded(
+                            child: SizedBox(
+                              height: 50,
+                              child: OutlinedButton(
+                                onPressed: () => setState(() => _showFullForm = true),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: context.primaryColor),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: const Text('Enter complete address',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: widget.isPickOnly ? _onConfirmLocation : _onDirectSave,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                              child: Text(
+                                  widget.isPickOnly ? 'Confirm Location' : 'Save Location',
+                                  style: TextStyle(
+                                      color: context.onPrimaryColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
         ),
       ],
     );
@@ -691,6 +839,10 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
             style: TextStyle(fontSize: 14, color: context.subTextColor)),
         const SizedBox(height: 10),
         _buildLabelSelector(),
+        if (_selectedLabel == 'Other') ...[
+          const SizedBox(height: 15),
+          _buildTextField('Custom label (e.g. Gym, Cafe)', _customLabelController),
+        ],
         const SizedBox(height: 20),
         _buildTextField('Flat / House no / Building name *', _houseController),
         _buildTextField('Floor (optional)', _floorController),
@@ -717,7 +869,14 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
       children: List.generate(labels.length, (index) {
         final isSelected = _selectedLabel == labels[index];
         return InkWell(
-          onTap: () => setState(() => _selectedLabel = labels[index]),
+          onTap: () {
+            setState(() {
+              _selectedLabel = labels[index];
+              if (_selectedLabel != 'Other') {
+                _customLabelController.clear();
+              }
+            });
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
@@ -903,6 +1062,76 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
               _lastMapPosition.latitude,
               _lastMapPosition.longitude,
               fullAddress,
+              radius: _radius,
+              label: finalLabel,
+            );
+        ToastService.showSuccessToast(context, 'Address saved successfully');
+        Navigator.pop(context);
+      } else {
+        ToastService.showErrorToast(context, response.message);
+      }
+    }
+  }
+
+  void _onDirectSave() async {
+    if (_selectedLabel == 'Other' &&
+        _customLabelController.text.trim().isEmpty) {
+      ToastService.showErrorToast(context, 'Please enter a custom label');
+      return;
+    }
+
+    final addressController = context.read<AddressController>();
+    String customLabelStr = _selectedLabel == 'Other' && _customLabelController.text.trim().isNotEmpty
+        ? "${_customLabelController.text.trim()} - "
+        : "";
+    String finalLabel = _selectedLabel.toLowerCase();
+    String finalAddress = "$customLabelStr$_currentAddress";
+
+    if (widget.editAddress != null) {
+      final updatedAddress = AddressModel(
+        id: widget.editAddress!.id,
+        label: finalLabel,
+        address: finalAddress,
+        latitude: _lastMapPosition.latitude,
+        longitude: _lastMapPosition.longitude,
+        isDefault: _isDefault ? 1 : 0,
+      );
+
+      final response = await addressController.updateAddress(
+          updatedAddress.id!, updatedAddress);
+      if (!mounted) return;
+
+      if (response.success) {
+        context.read<LocationController>().setLocation(
+              _lastMapPosition.latitude,
+              _lastMapPosition.longitude,
+              finalAddress,
+              radius: _radius,
+              label: finalLabel,
+            );
+        ToastService.showSuccessToast(context, 'Address updated successfully');
+        Navigator.pop(context);
+      } else {
+        ToastService.showErrorToast(context, response.message);
+      }
+    } else {
+      final newAddress = AddressModel(
+        label: finalLabel,
+        address: finalAddress,
+        latitude: _lastMapPosition.latitude,
+        longitude: _lastMapPosition.longitude,
+        isDefault:
+            _isDefault ? 1 : (addressController.addresses.isEmpty ? 1 : 0),
+      );
+
+      final response = await addressController.saveAddress(newAddress);
+      if (!mounted) return;
+
+      if (response.success) {
+        context.read<LocationController>().setLocation(
+              _lastMapPosition.latitude,
+              _lastMapPosition.longitude,
+              finalAddress,
               radius: _radius,
               label: finalLabel,
             );

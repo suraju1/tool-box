@@ -557,7 +557,7 @@ class _WebTakeCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          "${post.userName} is giving",
+                          "${(post.userName ?? 'User').split(' ').first} is giving",
                           style: TextStyle(color: greyColor, fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

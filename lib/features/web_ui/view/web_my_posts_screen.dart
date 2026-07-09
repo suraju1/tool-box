@@ -548,7 +548,7 @@ class _WebMyPostsScreenState extends State<WebMyPostsScreen> {
                             if (confirm == true && context.mounted) {
                               final success = await context
                                   .read<TradeController>()
-                                  .deletePost(post.id);
+                                  .deactivatePost(post.id);
                               if (success && context.mounted) {
                                 ToastService.showSuccessToast(
                                     context, 'Post deactivated successfully');

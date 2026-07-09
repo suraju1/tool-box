@@ -72,9 +72,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   children: [
                     _buildCategorySection(),
                     SizedBox(height: 12.h),
-                    _buildDistanceSection(),
-                    SizedBox(height: 12.h),
                     _buildReturnTypeSection(),
+                    SizedBox(height: 12.h),
+                    _buildDistanceSection(),
                     SizedBox(height: 25.h),
                   ],
                 ),
@@ -333,7 +333,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: EdgeInsets.symmetric(
-                    horizontal: 28.w, vertical: 10.h),
+                    horizontal: 22.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? context.primaryColor

@@ -7,11 +7,10 @@ class ApiConstants {
   // // // new
   // static const String baseUrl = 'http://88.222.245.145:4000/api/';
   // static const String baseUrl2 = 'http://88.222.245.145:4000/';
-  static const String baseUrl = 'https://toolucsdemo.apluscrm.in/api/';
-  static const String baseUrl2 = 'https://toolucsdemo.apluscrm.in';
-  // static const String baseUrl = 'https://toolucs.com/api/';
-
-  // static const String baseUrl2 = 'https://toolucs.com/';
+  // static const String baseUrl = 'https://toolucsdemo.apluscrm.in/api/';
+  // static const String baseUrl2 = 'https://toolucsdemo.apluscrm.in';
+  static const String baseUrl = 'https://toolucs.com/api/';
+  static const String baseUrl2 = 'https://toolucs.com/';
   static const String termsConditionsUrl = '${baseUrl2}terms-conditions';
   static const String privacyPolicyUrl = '${baseUrl2}privacy-policy';
 
@@ -36,6 +35,7 @@ class ApiConstants {
 
   // New endpoint for reactivating a post
   static const String reactivatePost = 'reactivate_post/{{postId}}'; //put
+  static const String deactivatePost = 'inactive_post/{{postId}}'; //put
 
   // 4-Step Trade Flow
   static const String respondToPost = 'respond/{{postid}}'; //post

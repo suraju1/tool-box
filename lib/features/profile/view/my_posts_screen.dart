@@ -410,8 +410,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: Text(AppLocalizations.of(context)!.deactivatePost),
-                                content: const Text(
-                                    'Are you sure you want to deactivate this post? Deactivating it will permanently delete your post.'),
+                                content: Text(AppLocalizations.of(context)!.areYouSureYouWant5),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
@@ -430,7 +429,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                             if (confirm == true && context.mounted) {
                               final success = await context
                                   .read<TradeController>()
-                                  .deletePost(post.id);
+                                  .deactivatePost(post.id);
                               if (success && context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(

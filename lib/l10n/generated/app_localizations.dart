@@ -1015,7 +1015,7 @@ abstract class AppLocalizations {
   /// No description provided for @areYouSureYouWant5.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to deactivate this post? Deactivating it will permanently delete your post.'**
+  /// **'Are you sure you want to deactivate this post? It will be hidden from other users and moved to your Inactive list.'**
   String get areYouSureYouWant5;
 
   /// No description provided for @deactivate.

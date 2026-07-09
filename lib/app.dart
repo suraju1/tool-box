@@ -42,8 +42,10 @@ class ToolUcsApp extends StatelessWidget {
         locale: languageController.locale,
         builder: (context, child) {
           return SafeArea(
-            top: false, // Keep app bars under the status bar correctly if they handle it
-            bottom: true, // Prevent content from going behind system navigation buttons
+            top:
+                false, // Keep app bars under the status bar correctly if they handle it
+            bottom:
+                true, // Prevent content from going behind system navigation buttons
             child: child ?? const SizedBox.shrink(),
           );
         },

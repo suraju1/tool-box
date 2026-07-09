@@ -479,7 +479,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get areYouSureYouWant5 =>
-      'Are you sure you want to deactivate this post? Deactivating it will permanently delete your post.';
+      'Are you sure you want to deactivate this post? It will be hidden from other users and moved to your Inactive list.';
 
   @override
   String get deactivate => 'Deactivate';

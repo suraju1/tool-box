@@ -763,6 +763,31 @@ class TradeController extends ChangeNotifier {
     }
   }
 
+  Future<bool> deactivatePost(int id) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _tradeService.deactivatePost(id);
+      if (response.success) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // --- 4-Step Trade Flow Controller Methods ---
 
   Future<bool> respondToPost(TradeResponseRequestModel request) async {
@@ -831,7 +856,10 @@ class TradeController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _tradeService.getMyPostResponses();
+      final response = await _tradeService.getMyPostResponses(
+        latitude: _latitude,
+        longitude: _longitude,
+      );
       if (response.success) {
         _postResponses = response.data ?? [];
       } else {
@@ -852,7 +880,10 @@ class TradeController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _tradeService.getMySentResponses();
+      final response = await _tradeService.getMySentResponses(
+        latitude: _latitude,
+        longitude: _longitude,
+      );
       if (response.success) {
         _sentResponses = response.data ?? [];
       } else {

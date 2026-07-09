@@ -10,6 +10,7 @@ import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tool_bocs/core/widgets/app_cached_image.dart';
+import 'package:tool_bocs/core/controller/location_controller.dart';
 
 class TradeHistoryScreen extends StatefulWidget {
   const TradeHistoryScreen({super.key});
@@ -31,6 +32,15 @@ class _TradeHistoryScreenState extends State<TradeHistoryScreen> {
 
   Future<void> _loadTradeHistory() async {
     final tradeController = context.read<TradeController>();
+    final locationController = context.read<LocationController>();
+
+    if (locationController.hasLocation) {
+      tradeController.setLocation(
+        locationController.latitude,
+        locationController.longitude,
+      );
+    }
+
     await Future.wait([
       tradeController.fetchMyTrades(),
       tradeController.fetchSentResponses(),

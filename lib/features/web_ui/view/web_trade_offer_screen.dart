@@ -343,8 +343,8 @@ class _WebTradeOfferScreenState extends State<WebTradeOfferScreen> {
                                   _buildReturnOption(
                                     type: ReturnType.existing,
                                     title: isGivePost
-                                        ? "Give what ${post.userName}'s asking for"
-                                        : "Take what ${post.userName}'s giving",
+                                        ? "Give what ${(post.userName ?? 'User').split(' ').first}'s asking for"
+                                        : "Take what ${(post.userName ?? 'User').split(' ').first}'s giving",
                                     child: _buildItemPreviewCard(post),
                                   ),
                                   const SizedBox(height: 16),
@@ -488,7 +488,7 @@ class _WebTradeOfferScreenState extends State<WebTradeOfferScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            "${post?.userName ?? '-'}'s ${isGivePost ? 'Giving' : 'Taking'}",
+            "${(post?.userName ?? 'User').split(' ').first}'s ${isGivePost ? 'Giving' : 'Taking'}",
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
