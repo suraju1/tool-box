@@ -695,6 +695,8 @@ class TradeController extends ChangeNotifier {
           }
         }
       } else {
+        // Post not found (e.g. 404) or access denied - explicitly clear selectedPost
+        _selectedPost = null;
         _errorMessage = response.message;
       }
     } catch (e) {

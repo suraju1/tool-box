@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:tool_bocs/core/services/storage_service.dart';
 import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 
@@ -97,6 +99,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
       context.read<SubscriptionController>().fetchMySubscription();
       context.read<ProfileController>().getCollections();
       _initLocation();
+      _checkAndOfferDraftRestore();
     });
   }
 
@@ -181,10 +184,167 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     super.dispose();
   }
 
+  bool _hasUnsavedChanges() {
+    return _itemNameController.text.trim().isNotEmpty ||
+        _itemNoteController.text.trim().isNotEmpty ||
+        _returnItemNameController.text.trim().isNotEmpty ||
+        _returnItemDescriptionController.text.trim().isNotEmpty ||
+        _itemImages.isNotEmpty ||
+        _returnItemImages.isNotEmpty;
+  }
+
+  Future<void> _saveDraft() async {
+    if (!_hasUnsavedChanges()) return;
+    final Object? args = ModalRoute.of(context)?.settings.arguments;
+    final String postType = (args == 'Create Take Post') ? 'take' : 'give';
+
+    final draftData = {
+      'itemName': _itemNameController.text,
+      'itemNote': _itemNoteController.text,
+      'returnItemName': _returnItemNameController.text,
+      'returnItemDescription': _returnItemDescriptionController.text,
+      'selectedCondition': _selectedCondition,
+      'returnSelectedCondition': _returnSelectedCondition,
+      'isPriceSelected': _isPriceSelected,
+      'priceStart': _priceRange.start,
+      'priceEnd': _priceRange.end,
+      'isNegotiable': _isNegotiable,
+      'notifyPartnersOnly': _notifyPartnersOnly,
+      'diameter': _diameter,
+    };
+
+    await StorageService.savePostDraft(postType, jsonEncode(draftData));
+  }
+
+  Future<void> _checkAndOfferDraftRestore() async {
+    final Object? args = ModalRoute.of(context)?.settings.arguments;
+    final String postType = (args == 'Create Take Post') ? 'take' : 'give';
+    final draftJson = await StorageService.getPostDraft(postType);
+
+    if (draftJson != null && draftJson.isNotEmpty && mounted) {
+      final shouldRestore = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: context.surfaceColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            title: Text(
+              'Restore Unsaved Draft?',
+              style: TextStyle(
+                color: context.textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18.sp,
+                fontFamily: FontFamily.openSans,
+              ),
+            ),
+            content: Text(
+              'We found an unsaved draft from your previous session. Would you like to restore your filled form or start fresh?',
+              style: TextStyle(
+                color: context.subTextColor,
+                fontSize: 14.sp,
+                fontFamily: FontFamily.openSans,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await StorageService.clearPostDraft(postType);
+                  if (context.mounted) Navigator.of(context).pop(false);
+                },
+                child: Text(
+                  'Start New Form',
+                  style: TextStyle(
+                    color: context.subTextColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  'Restore Draft',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldRestore == true && mounted) {
+        try {
+          final Map<String, dynamic> data = jsonDecode(draftJson);
+          setState(() {
+            _itemNameController.text = data['itemName'] ?? '';
+            _itemNoteController.text = data['itemNote'] ?? '';
+            _returnItemNameController.text = data['returnItemName'] ?? '';
+            _returnItemDescriptionController.text =
+                data['returnItemDescription'] ?? '';
+            if (data['selectedCondition'] != null) {
+              _selectedCondition = data['selectedCondition'];
+            }
+            if (data['returnSelectedCondition'] != null) {
+              _returnSelectedCondition = data['returnSelectedCondition'];
+            }
+            if (data['isPriceSelected'] != null) {
+              _isPriceSelected = data['isPriceSelected'];
+            }
+            if (data['priceStart'] != null && data['priceEnd'] != null) {
+              _priceRange = RangeValues(
+                (data['priceStart'] as num).toDouble(),
+                (data['priceEnd'] as num).toDouble(),
+              );
+            }
+            if (data['isNegotiable'] != null) {
+              _isNegotiable = data['isNegotiable'];
+            }
+            if (data['notifyPartnersOnly'] != null) {
+              _notifyPartnersOnly = data['notifyPartnersOnly'];
+            }
+            if (data['diameter'] != null) {
+              _diameter = (data['diameter'] as num).toDouble();
+            }
+          });
+        } catch (_) {}
+      }
+    }
+  }
+
+  Future<bool> _onBackPress() async {
+    await _saveDraft();
+    return true;
+  }
+
+  Future<void> _handleBackPress() async {
+    await _saveDraft();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.scaffoldBg,
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        await _saveDraft();
+      },
+      child: Scaffold(
+        backgroundColor: context.scaffoldBg,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
         child: Form(
@@ -342,6 +502,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -1363,6 +1524,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     final success = await context.read<TradeController>().createPost(request);
 
     if (success && mounted) {
+      final Object? args = ModalRoute.of(context)?.settings.arguments;
+      final String postType = (args == 'Create Take Post') ? 'take' : 'give';
+      await StorageService.clearPostDraft(postType);
       ToastService.showSuccessToast(context, 'Giveaway created successfully!');
       Navigator.pop(context);
     } else if (mounted) {
@@ -1631,7 +1795,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           IconButton(
             icon:
                 Icon(Icons.arrow_back_ios, color: context.textColor, size: 22),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _handleBackPress,
           ),
           SizedBox(width: 45.w),
           Center(
