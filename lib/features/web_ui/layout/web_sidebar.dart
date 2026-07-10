@@ -51,13 +51,24 @@ class WebSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Image.asset(
-              'assets/logo_transperant.png',
-              height: 35,
-              fit: BoxFit.contain,
-              color: context.textColor,
+          GestureDetector(
+            onTap: () {
+              if (activeRoute != AppRoutes.home) {
+                controller.setIndex(0);
+                Navigator.pushReplacementNamed(context, AppRoutes.home);
+              }
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Image.asset(
+                  'assets/logo_transperant.png',
+                  height: 35,
+                  fit: BoxFit.contain,
+                  color: context.textColor,
+                ),
+              ),
             ),
           ),
           Expanded(
