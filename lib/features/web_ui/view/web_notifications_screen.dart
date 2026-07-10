@@ -5,6 +5,7 @@ import 'package:tool_bocs/core/controller/shimmer_controller.dart';
 import 'package:tool_bocs/core/widgets/shimmer_box.dart';
 import 'package:tool_bocs/core/widgets/app_cached_image.dart';
 import 'package:tool_bocs/features/trades/controller/trade_controller.dart';
+import 'package:tool_bocs/features/trades/model/post_model.dart';
 import 'package:tool_bocs/features/trades/model/trade_response_model.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
 import 'package:tool_bocs/util/colors.dart';
@@ -91,10 +92,46 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
 
     try {
       tradeController.setSelectedResponse(response);
-      await tradeController.fetchPostDetails(response.postId);
+      try {
+        await tradeController.fetchPostDetails(response.postId);
+      } catch (_) {}
 
       if (tradeController.selectedPost == null) {
-        throw 'Failed to load post details. Please try again.';
+        final fallbackPost = PostModel(
+          id: response.postId,
+          userId: response.posterUserId,
+          pickupArea: response.meetingLocation ?? '',
+          latitude: 0.0,
+          longitude: 0.0,
+          areaDiameter: 5.0,
+          tradeType: 'Temporary',
+          itemName: response.postItemName ?? response.itemName ?? 'Item',
+          itemCategory: response.itemCategory ?? 'General',
+          itemCondition: response.itemCondition ?? 'Good',
+          itemNote: response.itemDescription ?? '',
+          itemSource: response.isHomemade ? 'Homemade' : 'Store bought',
+          itemImages: response.postItemImages.isNotEmpty
+              ? response.postItemImages
+              : response.itemImages,
+          returnType: response.responseType,
+          priceMin: response.priceRangeStart,
+          priceMax: response.priceRangeEnd,
+          isNegotiable: response.isNegotiable,
+          returnItemName: response.returnItemName ?? response.itemName,
+          returnItemCategory: response.itemCategory,
+          returnItemCondition: response.itemCondition,
+          returnItemDescription: response.itemDescription,
+          returnItemImages: response.itemImages,
+          walletCredits: 0,
+          notifyPartnersOnly: false,
+          postType: response.postType ?? 'give',
+          status: response.status,
+          createdAt: response.createdAt,
+          updatedAt: response.createdAt,
+          userName: response.posterName ?? 'User',
+          userImage: response.posterImage,
+        );
+        tradeController.setSelectedPost(fallbackPost);
       }
 
       if (mounted) Navigator.pop(context);
@@ -327,6 +364,12 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
     );
   }
 
+  /// Returns only the first word of a full name
+  String _firstName(String? fullName) {
+    if (fullName == null || fullName.trim().isEmpty) return 'User';
+    return fullName.trim().split(' ').first;
+  }
+
   Widget _buildResponseCard(
       BuildContext context, TradeResponseModel response, bool isIncoming) {
     List<TextSpan> messageSpans = [];
@@ -351,7 +394,7 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
       final postItem = response.postItemName ?? 'item';
       messageSpans = [
         TextSpan(
-            text: response.responderName,
+            text: _firstName(response.responderName),
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const TextSpan(text: ' is\nTaking your '),
         TextSpan(
@@ -384,7 +427,7 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
       final postItem = response.postItemName ?? 'item';
       messageSpans = [
         TextSpan(
-            text: response.posterName ?? 'User',
+            text: _firstName(response.posterName),
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const TextSpan(text: ' is\nGiving you '),
         TextSpan(

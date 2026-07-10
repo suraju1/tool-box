@@ -107,4 +107,19 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userProfileKey);
   }
+
+  static Future<void> savePostDraft(String postType, String draftJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('post_draft_$postType', draftJson);
+  }
+
+  static Future<String?> getPostDraft(String postType) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('post_draft_$postType');
+  }
+
+  static Future<void> clearPostDraft(String postType) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('post_draft_$postType');
+  }
 }
