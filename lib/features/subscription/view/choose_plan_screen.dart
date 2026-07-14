@@ -190,7 +190,7 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
           'amount': orderResponse.amount > 0
               ? orderResponse.amount
               : (double.tryParse(plan.price) ?? 0) * 100,
-          'name': 'Toolbocs',
+          'name': 'Toolucs',
           'description': plan.name,
           'order_id': orderResponse.orderId,
           'prefill': {

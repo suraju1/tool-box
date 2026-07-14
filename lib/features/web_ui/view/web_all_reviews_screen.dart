@@ -4,7 +4,7 @@ import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
 import 'package:tool_bocs/features/profile/model/user_profile_model.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/l10n/generated/app_localizations.dart';
-
+import 'package:provider/provider.dart';
 class WebAllReviewsScreen extends StatelessWidget {
   final UserProfileModel profile;
   const WebAllReviewsScreen({super.key, required this.profile});
@@ -277,6 +277,81 @@ class WebAllReviewsScreen extends StatelessWidget {
                       height: 1.4,
                     ),
                   ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        context
+                            .read<ProfileController>()
+                            .toggleReviewReaction(review.id, 'like');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: review.userReaction == 'like'
+                              ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black)
+                              : Colors.transparent,
+                          border: Border.all(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text("True: ${review.likesCount}",
+                            style: TextStyle(
+                                color: review.userReaction == 'like'
+                                    ? (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.black
+                                        : Colors.white)
+                                    : (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white
+                                        : Colors.black),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        context
+                            .read<ProfileController>()
+                            .toggleReviewReaction(review.id, 'dislike');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: review.userReaction == 'dislike'
+                              ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black)
+                              : Colors.transparent,
+                          border: Border.all(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text("False: ${review.dislikesCount}",
+                            style: TextStyle(
+                                color: review.userReaction == 'dislike'
+                                    ? (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.black
+                                        : Colors.white)
+                                    : (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white
+                                        : Colors.black),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

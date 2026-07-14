@@ -6,6 +6,7 @@ import 'package:tool_bocs/core/widgets/app_cached_image.dart';
 import 'package:tool_bocs/features/login_and_signup/controller/auth_controller.dart';
 import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
 import 'package:tool_bocs/features/profile/view/user_profile_screen.dart';
+import 'package:tool_bocs/features/web_ui/view/web_user_profile_screen.dart';
 import 'package:tool_bocs/features/trades/controller/trade_controller.dart';
 import 'package:tool_bocs/features/trades/model/post_model.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
@@ -92,7 +93,7 @@ class WebProductCard extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    UserProfileScreen(userId: post.userId.toString()),
+                    WebUserProfileScreen(userId: post.userId.toString()),
               ),
             );
             break;
@@ -207,20 +208,22 @@ class WebProductCard extends StatelessWidget {
             // Image
             Expanded(
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    color: greyColor.withOpacity(0.1),
-                    child: imagePath.isNotEmpty
-                        ? AppCachedImage(
-                            imageUrl: imagePath,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: double.infinity,
-                            radius: 0,
-                          )
-                        : const Icon(Icons.image_outlined,
-                            size: 50, color: Colors.grey),
+                  Positioned.fill(
+                    child: Container(
+                      color: greyColor.withOpacity(0.1),
+                      child: imagePath.isNotEmpty
+                          ? AppCachedImage(
+                              imageUrl: imagePath,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              radius: 0,
+                            )
+                          : const Icon(Icons.image_outlined,
+                              size: 50, color: Colors.grey),
+                    ),
                   ),
                   Positioned(
                     top: 8,

@@ -653,6 +653,81 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
                           : Colors.grey.shade700,
                       height: 1.5),
                 ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        context
+                            .read<ProfileController>()
+                            .toggleReviewReaction(review.id, 'like');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: review.userReaction == 'like'
+                              ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black)
+                              : Colors.transparent,
+                          border: Border.all(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text("True: ${review.likesCount}",
+                            style: TextStyle(
+                                color: review.userReaction == 'like'
+                                    ? (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.black
+                                        : Colors.white)
+                                    : (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white
+                                        : Colors.black),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        context
+                            .read<ProfileController>()
+                            .toggleReviewReaction(review.id, 'dislike');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: review.userReaction == 'dislike'
+                              ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black)
+                              : Colors.transparent,
+                          border: Border.all(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text("False: ${review.dislikesCount}",
+                            style: TextStyle(
+                                color: review.userReaction == 'dislike'
+                                    ? (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.black
+                                        : Colors.white)
+                                    : (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white
+                                        : Colors.black),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

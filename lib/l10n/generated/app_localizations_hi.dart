@@ -989,7 +989,7 @@ class AppLocalizationsHi extends AppLocalizations {
       'कनेक्शन स्वचालित रूप से जाँचा जा रहा है...';
 
   @override
-  String get welcomeToToolbocs => 'टूलबॉक्स में आपका स्वागत है';
+  String get welcomeToToolbocs => 'टूलयूक्स में आपका स्वागत है';
 
   @override
   String get theUltimatePlatformToTrade =>

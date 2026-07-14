@@ -525,7 +525,24 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
         const SizedBox(height: 12),
         Text(AppLocalizations.of(context)!.tradeType,
             style: TextStyle(color: Colors.grey, fontSize: 14)),
-        const SizedBox(height: 12),
+        const SizedBox(height: 4),
+        const Text(
+          'Temporary: Stays for 48 hours (make it active for free)',
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const Text(
+          'Permanent: Permanently stays on account until you remove it',
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 8),
         Container(
           height: 45,
           decoration: BoxDecoration(

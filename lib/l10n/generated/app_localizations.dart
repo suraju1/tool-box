@@ -1987,7 +1987,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeToToolbocs.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to ToolBocs'**
+  /// **'Welcome to Toolucs'**
   String get welcomeToToolbocs;
 
   /// No description provided for @theUltimatePlatformToTrade.

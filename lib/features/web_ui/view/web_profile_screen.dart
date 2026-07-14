@@ -426,75 +426,84 @@ class WebProfileScreen extends StatelessWidget {
                                   fontSize: 12),
                             ),
                             const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    context
-                                        .read<ProfileController>()
-                                        .toggleReviewReaction(
-                                            review.id, 'like');
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: review.userReaction == 'like'
-                                          ? const Color(0xFF65B741)
-                                          : (isDark
-                                              ? Colors.grey.shade800
-                                              : Colors.black),
-                                      borderRadius: BorderRadius.circular(12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  InkWell(
+                                    onTap: () {
+                                      context
+                                          .read<ProfileController>()
+                                          .toggleReviewReaction(
+                                              review.id, 'like');
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: review.userReaction == 'like'
+                                            ? (Theme.of(context).brightness == Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                            color: Theme.of(context).brightness == Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text("True: ${review.likesCount}",
+                                          style: TextStyle(
+                                              color: review.userReaction == 'like'
+                                                  ? (Theme.of(context).brightness == Brightness.dark
+                                                      ? Colors.black
+                                                      : Colors.white)
+                                                  : (Theme.of(context).brightness == Brightness.dark
+                                                      ? Colors.white
+                                                      : Colors.black),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold)),
                                     ),
-                                    child: Text("True:${review.likesCount}",
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold)),
                                   ),
-                                ),
-                                InkWell(
-                                  onTap: () {
-                                    context
-                                        .read<ProfileController>()
-                                        .toggleReviewReaction(
-                                            review.id, 'dislike');
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: review.userReaction == 'dislike'
-                                          ? Colors.red
-                                          : (isDark
-                                              ? Colors.grey.shade900
-                                              : Colors.white),
-                                      border: Border.all(
-                                          color:
-                                              review.userReaction == 'dislike'
-                                                  ? Colors.red
-                                                  : (isDark
-                                                      ? Colors.grey.shade700
-                                                      : Colors.black)),
-                                      borderRadius: BorderRadius.circular(12),
+                                  InkWell(
+                                    onTap: () {
+                                      context
+                                          .read<ProfileController>()
+                                          .toggleReviewReaction(
+                                              review.id, 'dislike');
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: review.userReaction == 'dislike'
+                                            ? (Theme.of(context).brightness == Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black)
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                            color: Theme.of(context).brightness == Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                          "False: ${review.dislikesCount}",
+                                          style: TextStyle(
+                                              color:
+                                                  review.userReaction == 'dislike'
+                                                      ? (Theme.of(context).brightness == Brightness.dark
+                                                          ? Colors.black
+                                                          : Colors.white)
+                                                      : (Theme.of(context).brightness == Brightness.dark
+                                                          ? Colors.white
+                                                          : Colors.black),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold)),
                                     ),
-                                    child: Text(
-                                        "False: ${review.dislikesCount}",
-                                        style: TextStyle(
-                                            color:
-                                                review.userReaction == 'dislike'
-                                                    ? Colors.white
-                                                    : (isDark
-                                                        ? Colors.white
-                                                        : Colors.black),
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold)),
                                   ),
-                                ),
-                              ],
-                            )
+                                ],
+                              )
                           ],
                         ),
                       )
@@ -576,37 +585,6 @@ class WebProfileScreen extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 48),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.bookmark_border, size: 24),
-              label: Text(AppLocalizations.of(context)!.saveProfile),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? Colors.white : Colors.black,
-                foregroundColor: isDark ? Colors.black : Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 48, vertical: 24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                textStyle:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Text(
-              AppLocalizations.of(context)!.yourProfileIsSavedBy,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade800,
-              ),
-            ),
-          )
         ],
       ),
     );

@@ -76,8 +76,8 @@ class WebSidebar extends StatelessWidget {
               child: Column(
                 children: [
                   _NavItem(
-                    icon: Icons.grid_view_outlined,
-                    activeIcon: Icons.grid_view,
+                    icon: Icons.dashboard_outlined,
+                    activeIcon: Icons.dashboard,
                     title: AppLocalizations.of(context)!.home,
                     isSelected: activeRoute == AppRoutes.home,
                     onTap: () {
@@ -88,8 +88,8 @@ class WebSidebar extends StatelessWidget {
                     },
                   ),
                   _NavItem(
-                    icon: Icons.upload_outlined,
-                    activeIcon: Icons.upload,
+                    icon: Icons.file_upload_outlined,
+                    activeIcon: Icons.file_upload,
                     title: AppLocalizations.of(context)!.giveLabel,
                     isSelected: activeRoute == AppRoutes.webGive,
                     onTap: () {
@@ -101,8 +101,8 @@ class WebSidebar extends StatelessWidget {
                     },
                   ),
                   _NavItem(
-                    icon: Icons.download_outlined,
-                    activeIcon: Icons.download,
+                    icon: Icons.file_download_outlined,
+                    activeIcon: Icons.file_download,
                     title: AppLocalizations.of(context)!.takeLabel,
                     isSelected: activeRoute == AppRoutes.webTake,
                     onTap: () {
@@ -114,8 +114,8 @@ class WebSidebar extends StatelessWidget {
                     },
                   ),
                   _NavItem(
-                    icon: Icons.chat_bubble_outline,
-                    activeIcon: Icons.chat_bubble,
+                    icon: Icons.message_outlined,
+                    activeIcon: Icons.message,
                     title: AppLocalizations.of(context)!.chat,
                     isSelected: activeRoute == AppRoutes.chat,
                     onTap: () {
@@ -160,8 +160,8 @@ class WebSidebar extends StatelessWidget {
                     },
                   ),
                   _NavItem(
-                    icon: Icons.stars_outlined,
-                    activeIcon: Icons.stars,
+                    icon: Icons.workspace_premium_outlined,
+                    activeIcon: Icons.workspace_premium,
                     title: AppLocalizations.of(context)!.mySubscription,
                     isSelected: activeRoute == AppRoutes.mySubscription,
                     onTap: () {
@@ -233,6 +233,7 @@ class WebSidebar extends StatelessWidget {
                     activeIcon: Icons.logout,
                     title: AppLocalizations.of(context)!.logout,
                     isSelected: false,
+                    isDestructive: true,
                     onTap: () {
                       showDialog(
                         context: context,
@@ -257,6 +258,7 @@ class _NavItem extends StatefulWidget {
   final String title;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isDestructive;
 
   const _NavItem({
     required this.icon,
@@ -264,6 +266,7 @@ class _NavItem extends StatefulWidget {
     required this.title,
     required this.isSelected,
     required this.onTap,
+    this.isDestructive = false,
   });
 
   @override
@@ -292,7 +295,7 @@ class _NavItemState extends State<_NavItem> {
             color: widget.isSelected
                 ? context.textColor.withOpacity(0.08)
                 : isHovered
-                    ? Colors.grey.withOpacity(0.05)
+                    ? (widget.isDestructive ? Colors.red.withOpacity(0.1) : Colors.grey.withOpacity(0.05))
                     : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -302,7 +305,7 @@ class _NavItemState extends State<_NavItem> {
                 widget.isSelected ? widget.activeIcon : widget.icon,
                 color: widget.isSelected
                     ? context.textColor
-                    : (isHovered ? context.textColor : context.subTextColor),
+                    : (isHovered ? (widget.isDestructive ? Colors.red : context.textColor) : context.subTextColor),
                 size: 20,
               ),
               const SizedBox(width: 16),
@@ -311,7 +314,7 @@ class _NavItemState extends State<_NavItem> {
                 style: GoogleFonts.inter(
                   color: widget.isSelected
                       ? context.textColor
-                      : (isHovered ? context.textColor : context.subTextColor),
+                      : (isHovered ? (widget.isDestructive ? Colors.red : context.textColor) : context.subTextColor),
                   fontWeight:
                       widget.isSelected ? FontWeight.w600 : FontWeight.w500,
                   fontSize: 14,

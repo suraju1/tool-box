@@ -25,6 +25,8 @@ import 'package:tool_bocs/features/subscription/controller/subscription_controll
 import 'package:tool_bocs/features/notifications/controller/notification_controller.dart';
 import 'package:tool_bocs/features/trades/controller/wallet_controller.dart';
 import 'package:tool_bocs/core/controller/language_controller.dart';
+import 'package:tool_bocs/core/services/storage_service.dart';
+import 'package:tool_bocs/core/api/api_client.dart';
 
 import 'app.dart';
 import 'package:tool_bocs/core/widgets/web_responsive_wrapper.dart';
@@ -78,6 +80,16 @@ void main() async {
   DeepLinkHandler()
       .init()
       .catchError((e) => debugPrint("DeepLink init error: $e"));
+
+  // Restore API token for web deep links or hot restarts before first request
+  try {
+    final token = await StorageService.getAuthToken();
+    if (token != null && token.isNotEmpty) {
+      ApiClient().setAuthToken(token);
+    }
+  } catch (e) {
+    debugPrint("Failed to restore auth token: $e");
+  }
 
   runApp(
     WebResponsiveWrapper(

@@ -132,7 +132,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ],
                           SizedBox(height: 20.h),
                           // _buildSettingsList(context),
-                          _saveUserButton(context),
+                          if (userProfile.userDetails.id != context.read<AuthController>().currentUser?.id)
+                            _saveUserButton(context),
                           SizedBox(height: 40.h),
                         ],
                       ),

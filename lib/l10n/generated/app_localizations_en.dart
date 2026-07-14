@@ -985,7 +985,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Checking connection automatically...';
 
   @override
-  String get welcomeToToolbocs => 'Welcome to ToolBocs';
+  String get welcomeToToolbocs => 'Welcome to Toolucs';
 
   @override
   String get theUltimatePlatformToTrade =>

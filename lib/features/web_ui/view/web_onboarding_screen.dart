@@ -328,7 +328,7 @@ class _WebOnboardingScreenState extends State<WebOnboardingScreen> {
                               ),
                             ),
                             Text(
-                              'Welcome to ToolBocs',
+                              'Welcome to Toolucs',
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.w900,

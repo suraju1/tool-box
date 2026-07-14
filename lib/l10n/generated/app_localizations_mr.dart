@@ -991,7 +991,7 @@ class AppLocalizationsMr extends AppLocalizations {
   String get checkingConnectionAutomatically => 'आपोआप कनेक्शन तपासत आहे...';
 
   @override
-  String get welcomeToToolbocs => 'ToolBocs मध्ये आपले स्वागत आहे';
+  String get welcomeToToolbocs => 'Toolucs मध्ये आपले स्वागत आहे';
 
   @override
   String get theUltimatePlatformToTrade =>

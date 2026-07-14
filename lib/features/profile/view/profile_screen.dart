@@ -732,15 +732,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         horizontal: 8.w, vertical: 2.h),
                                     decoration: BoxDecoration(
                                       color: review.userReaction == 'like'
-                                          ? const Color(0xFF65B741)
-                                          : (context.isDarkMode
-                                              ? Colors.grey.shade800
+                                          ? (context.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black)
+                                          : Colors.transparent,
+                                      border: Border.all(
+                                          color: context.isDarkMode
+                                              ? Colors.white
                                               : Colors.black),
                                       borderRadius: BorderRadius.circular(12.r),
                                     ),
-                                    child: Text("True:${review.likesCount}",
+                                    child: Text("True: ${review.likesCount}",
                                         style: TextStyle(
-                                            color: Colors.white,
+                                            color: review.userReaction == 'like'
+                                                ? (context.isDarkMode
+                                                    ? Colors.black
+                                                    : Colors.white)
+                                                : (context.isDarkMode
+                                                    ? Colors.white
+                                                    : Colors.black),
                                             fontSize: 9.sp,
                                             fontWeight: FontWeight.bold)),
                                   ),
@@ -758,17 +768,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         horizontal: 8.w, vertical: 2.h),
                                     decoration: BoxDecoration(
                                       color: review.userReaction == 'dislike'
-                                          ? Colors.red
-                                          : (context.isDarkMode
-                                              ? Colors.grey.shade900
-                                              : Colors.white),
+                                          ? (context.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black)
+                                          : Colors.transparent,
                                       border: Border.all(
-                                          color:
-                                              review.userReaction == 'dislike'
-                                                  ? Colors.red
-                                                  : (context.isDarkMode
-                                                      ? Colors.grey.shade700
-                                                      : Colors.black)),
+                                          color: context.isDarkMode
+                                              ? Colors.white
+                                              : Colors.black),
                                       borderRadius: BorderRadius.circular(12.r),
                                     ),
                                     child: Text(
@@ -776,7 +783,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: TextStyle(
                                             color:
                                                 review.userReaction == 'dislike'
-                                                    ? Colors.white
+                                                    ? (context.isDarkMode
+                                                        ? Colors.black
+                                                        : Colors.white)
                                                     : (context.isDarkMode
                                                         ? Colors.white
                                                         : Colors.black),

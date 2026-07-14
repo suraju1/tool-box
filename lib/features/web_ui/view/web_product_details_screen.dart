@@ -90,7 +90,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
             controller: _scrollController,
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1440),
+                constraints: const BoxConstraints(maxWidth: double.infinity),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
@@ -351,7 +351,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
                     curve: Curves.easeOutQuart,
                     child: AppCachedImage(
                       imageUrl: images[_currentImageIndex],
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
                       radius: 0,
@@ -362,11 +362,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
                     left: 24,
                     child: _buildCategoryTag(category),
                   ),
-                  Positioned(
-                    top: 24,
-                    right: 24,
-                    child: _buildTradeTypeTag(tradeType),
-                  ),
+
                 ],
               ),
             ),
@@ -567,15 +563,111 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            post.itemName,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              fontFamily: FontFamily.openSans,
-              color: context.textColor,
-              height: 1.2,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  post.itemName,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: FontFamily.openSans,
+                    color: context.textColor,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              if (post.tradeType.toLowerCase() == 'temporary')
+                Column(
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(32),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return Dialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              backgroundColor: context.surfaceColor,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 500),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Offer Type',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: context.textColor,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            icon: Icon(Icons.close, color: context.textColor),
+                                            splashRadius: 20,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: context.textColor,
+                                            height: 1.5,
+                                            fontFamily: FontFamily.openSans,
+                                          ),
+                                          children: const [
+                                            TextSpan(text: 'Temporary: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            TextSpan(text: 'Stays for 48 hours (make it active for free)'),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      RichText(
+                                        text: TextSpan(
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: context.textColor,
+                                            height: 1.5,
+                                            fontFamily: FontFamily.openSans,
+                                          ),
+                                          children: const [
+                                            TextSpan(text: 'Permanent: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            TextSpan(text: 'Permanently stays on account until you remove it'),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      child: Image.asset(
+                        'assets/temporary_logo.png',
+                        width: 64,
+                        height: 64,
+                        color: context.isDarkMode ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
@@ -1008,7 +1100,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
               decoration: BoxDecoration(
                 border: Border.all(
                     color: postTypeStr == 'Giving'
-                        ? Colors.green.shade400
+                        ? Colors.grey.shade500
                         : context.primaryColor),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -1016,7 +1108,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
                 postTypeStr,
                 style: TextStyle(
                   color: postTypeStr == 'Giving'
-                      ? Colors.green.shade600
+                      ? (context.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700)
                       : context.primaryColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,

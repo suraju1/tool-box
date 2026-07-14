@@ -682,20 +682,64 @@ class _TakeScreenState extends State<TakeScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (post.itemNote.isNotEmpty) ...[
-                    SizedBox(height: 2.h),
-                    Text(
-                      post.itemNote,
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: context.subTextColor,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: FontFamily.openSans,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  SizedBox(height: 2.h),
+                  Builder(builder: (context) {
+                    final type = post.returnType.toLowerCase().trim();
+                    final min = post.priceMin;
+                    final max = post.priceMax;
+                    final name = post.returnItemName ?? '';
+                    final category = post.returnItemCategory ?? '';
+                    if (type == 'exchange' || type == 'item') {
+                      String text = AppLocalizations.of(context)!.inExchangeFor;
+                      if (name.isNotEmpty) {
+                        text += name;
+                        if (category.isNotEmpty) text += ' ($category)';
+                      } else if (category.isNotEmpty) {
+                        text += category;
+                      } else {
+                        text += AppLocalizations.of(context)!.itemLabel;
+                      }
+                      return Text(
+                        text,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: FontFamily.openSans,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    } else if (type == 'free') {
+                      return Text(
+                        AppLocalizations.of(context)!.freeLabel,
+                        style: TextStyle(
+                          color: context.primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.sp,
+                          fontFamily: FontFamily.openSans,
+                        ),
+                      );
+                    } else {
+                      String text =
+                          '${AppLocalizations.of(context)!.inExchangeFor}₹${min?.toStringAsFixed(0) ?? 0} ${AppLocalizations.of(context)!.moneyLabel}';
+                      if (min != null && max != null && max != min) {
+                        text =
+                            '${AppLocalizations.of(context)!.inExchangeFor}₹${min.toStringAsFixed(0)} - ₹${max.toStringAsFixed(0)} ${AppLocalizations.of(context)!.moneyLabel}';
+                      }
+                      return Text(
+                        text,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: FontFamily.openSans,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    }
+                  }),
                   SizedBox(height: 3.h),
                   Row(
                     children: [

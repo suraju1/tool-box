@@ -171,6 +171,32 @@ class _GiveScreenState extends State<GiveScreen> {
 
                                     final post =
                                         tradeController.takePosts[index - 1];
+                                    // Build exchange info text
+                                    final rType = post.returnType.toLowerCase().trim();
+                                    final rMin = post.priceMin;
+                                    final rMax = post.priceMax;
+                                    final rName = post.returnItemName ?? '';
+                                    final rCat = post.returnItemCategory ?? '';
+                                    String exchangeText;
+                                    if (rType == 'exchange' || rType == 'item') {
+                                      exchangeText = 'In exchange for: ';
+                                      if (rName.isNotEmpty) {
+                                        exchangeText += rName;
+                                        if (rCat.isNotEmpty) exchangeText += ' ($rCat)';
+                                      } else if (rCat.isNotEmpty) {
+                                        exchangeText += rCat;
+                                      } else {
+                                        exchangeText += 'Item';
+                                      }
+                                    } else if (rType == 'free') {
+                                      exchangeText = 'Free';
+                                    } else {
+                                      if (rMin != null && rMax != null && rMax != rMin) {
+                                        exchangeText = 'In exchange for: ₹${rMin.toStringAsFixed(0)} - ₹${rMax.toStringAsFixed(0)} (Money)';
+                                      } else {
+                                        exchangeText = 'In exchange for: ₹${rMin?.toStringAsFixed(0) ?? 0} (Money)';
+                                      }
+                                    }
                                     return Padding(
                                       padding: EdgeInsets.only(bottom: 6.h),
                                       child: _buildProductCard(
@@ -192,7 +218,7 @@ class _GiveScreenState extends State<GiveScreen> {
                                                     'give'
                                                 ? 'Take'
                                                 : 'Give',
-                                        description: post.itemNote,
+                                        description: exchangeText,
                                         imagePath: post.itemImages.isNotEmpty
                                             ? post.itemImages.first
                                             : null,

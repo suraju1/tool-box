@@ -10,6 +10,7 @@ import 'package:tool_bocs/features/login_and_signup/controller/auth_controller.d
 import 'package:share_plus/share_plus.dart';
 import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
 import 'package:tool_bocs/features/profile/view/user_profile_screen.dart';
+import 'package:tool_bocs/features/web_ui/view/web_user_profile_screen.dart';
 import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/web_ui/view/web_filter_dialog.dart';
 import 'package:tool_bocs/features/web_ui/view/web_save_to_collection_dialog.dart';
@@ -311,7 +312,7 @@ class _WebGiveCard extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    UserProfileScreen(userId: post.userId.toString()),
+                    WebUserProfileScreen(userId: post.userId.toString()),
               ),
             );
             break;
@@ -477,20 +478,22 @@ class _WebGiveCard extends StatelessWidget {
             // Image
             Expanded(
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    color: greyColor.withOpacity(0.1),
-                    child: imagePath.isNotEmpty
-                        ? AppCachedImage(
-                            imageUrl: imagePath,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: double.infinity,
-                            radius: 0,
-                          )
-                        : const Icon(Icons.handyman,
-                            size: 50, color: Colors.grey),
+                  Positioned.fill(
+                    child: Container(
+                      color: greyColor.withOpacity(0.1),
+                      child: imagePath.isNotEmpty
+                          ? AppCachedImage(
+                              imageUrl: imagePath,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              radius: 0,
+                            )
+                          : const Icon(Icons.handyman,
+                              size: 50, color: Colors.grey),
+                    ),
                   ),
                   Positioned(
                     top: 8,

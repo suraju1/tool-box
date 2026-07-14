@@ -617,7 +617,24 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         SizedBox(height: 8.h),
         Text(AppLocalizations.of(context)!.tradeType,
             style: TextStyle(color: context.subTextColor, fontSize: 12.sp)),
-        SizedBox(height: 12.h),
+        SizedBox(height: 4.h),
+        Text(
+          'Temporary: Stays for 48 hours (make it active for free)',
+          style: TextStyle(
+            color: context.subTextColor.withOpacity(0.7),
+            fontSize: 10.sp,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        Text(
+          'Permanent: Permanently stays on account until you remove it',
+          style: TextStyle(
+            color: context.subTextColor.withOpacity(0.7),
+            fontSize: 10.sp,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        SizedBox(height: 8.h),
         Container(
           height: 45.h,
           decoration: BoxDecoration(
