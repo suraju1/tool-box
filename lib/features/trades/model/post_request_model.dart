@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:tool_bocs/util/string_util.dart';
@@ -138,6 +139,10 @@ class PostRequestModel {
             MultipartFile.fromBytes(bytes, filename: xFile.name),
           ));
         } else {
+          if (!File(imagePath).existsSync()) {
+            throw Exception(
+                'One or more selected images no longer exist on your device. Please re-select your images.');
+          }
           formData.files.add(MapEntry(
             itemImagesKey,
             await MultipartFile.fromFile(imagePath),
@@ -158,6 +163,10 @@ class PostRequestModel {
               MultipartFile.fromBytes(bytes, filename: xFile.name),
             ));
           } else {
+            if (!File(imagePath).existsSync()) {
+              throw Exception(
+                  'One or more selected images no longer exist on your device. Please re-select your images.');
+            }
             formData.files.add(MapEntry(
               returnItemImagesKey,
               await MultipartFile.fromFile(imagePath),

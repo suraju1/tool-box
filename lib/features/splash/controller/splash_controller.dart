@@ -21,12 +21,14 @@ class SplashController extends ChangeNotifier {
     // Start minimum splash delay of 2 seconds (skip on web)
     final delayFuture = kIsWeb ? Future.value() : Future.delayed(const Duration(seconds: 2));
 
-    // Request location permission on first launch in the background (non-blocking)
+    // Request location permission / fetch location on first launch only if not already cached
     final locationController = context.read<LocationController>();
-    locationController.fetchLocation().catchError((e) {
-      debugPrint('Error fetching location on startup: $e');
-      return true;
-    });
+    if (!locationController.hasLocation || locationController.address == null) {
+      locationController.fetchLocation().catchError((e) {
+        debugPrint('Error fetching location on startup: $e');
+        return true;
+      });
+    }
 
     // Show splash for minimum 2 seconds
     await delayFuture;

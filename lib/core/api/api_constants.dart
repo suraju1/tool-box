@@ -7,10 +7,10 @@ class ApiConstants {
   // // // new
   // static const String baseUrl = 'http://88.222.245.145:4000/api/';
   // static const String baseUrl2 = 'http://88.222.245.145:4000/';
-  static const String baseUrl = 'https://toolucsdemo.apluscrm.in/api/';
-  static const String baseUrl2 = 'https://toolucsdemo.apluscrm.in';
-//   static const String baseUrl = 'https://toolucs.com/api/';
-//   static const String baseUrl2 = 'https://toolucs.com/';
+  // static const String baseUrl = 'https://toolucsdemo.apluscrm.in/api/';
+  // static const String baseUrl2 = 'https://toolucsdemo.apluscrm.in';
+  static const String baseUrl = 'https://toolucs.com/api/';
+  static const String baseUrl2 = 'https://toolucs.com';
   static const String termsConditionsUrl = '${baseUrl2}terms-conditions';
   static const String privacyPolicyUrl = '${baseUrl2}privacy-policy';
 
@@ -75,13 +75,27 @@ class ApiConstants {
   // Saved Users
   // static const String userSave = 'user_save/{{id}}'; //post
   static const String unsaveUser = 'unsave_user/{{id}}'; //delete
-  static const String listSaveUser = 'list_save_user'; //get
-  static const String collections = 'collections'; //get, post
-  static const String fetchCollectionItems = 'collections/{{id}}'; //get
+  static const String listSaveUser = 'collections/users'; //get
+  static const String collectionsUsers = 'collections/users'; //get
+  static const String collections = 'list_collections'; //get
+  static const String listCollections = 'list_collections'; //get
+  static const String createCollection = 'create_collection'; //post
+  static const String fetchCollectionItems = 'collection/{{id}}/members'; //get
+  static const String fetchCollectionMembers =
+      'collection/{{collectionId}}/members'; //get
   static const String collectionItems = 'collections/{{id}}/items'; //post
+  static const String addUserToCollection =
+      'collection/{{collectionId}}/add_user/{{targetUserId}}'; //post
+  static const String removeUserFromCollection =
+      'collection/{{collectionId}}/remove_user/{{targetUserId}}'; //delete
   static const String removeCollectionItem =
-      'collections/{{id}}/items/{{itemId}}'; //delete
-  static const String deleteCollection = 'collections/{{id}}'; //delete
+      'collection/{{id}}/remove_user/{{itemId}}'; //delete
+  static const String deleteCollection =
+      'collection/{{collectionId}}'; //delete
+
+  // Review management
+  static const String deleteUserReview = 'review/{{id}}'; //delete
+  static const String clearReviewComment = 'review/{{id}}/comment'; //patch
 
   // static const String reactivatePost = 'reactivate_post/{{postid}}'; //put
   static const String subscribe = 'subscribe'; //post

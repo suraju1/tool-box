@@ -264,10 +264,12 @@ class TradeController extends ChangeNotifier {
   String get homeSearchQuery => _homeSearchQuery;
 
   double _distanceKm = 10.0; // Default distance
+  double _maxDistanceKm = 10.0;
   double? _latitude;
   double? _longitude;
 
   double get distanceKm => _distanceKm;
+  double get maxDistanceKm => _maxDistanceKm;
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   bool get hasLocation => _latitude != null && _longitude != null;
@@ -275,8 +277,9 @@ class TradeController extends ChangeNotifier {
 
   void setDistance(double value,
       {bool triggerFetch = false, String fetchType = 'all'}) {
-    if (_distanceKm == value) return;
-    _distanceKm = value;
+    double clamped = (_maxDistanceKm > 0.01 && value > _maxDistanceKm) ? _maxDistanceKm : value;
+    if (_distanceKm == clamped) return;
+    _distanceKm = clamped;
     notifyListeners();
 
     if (triggerFetch) {
@@ -300,10 +303,63 @@ class TradeController extends ChangeNotifier {
     super.dispose();
   }
 
-  void setLocation(double? lat, double? lng) {
+  int _lastLocationUpdateTimestamp = -1;
+
+  void updateLocationAndFetchIfNeeded(double? lat, double? lng, int timestamp, {double? radius}) {
+    if (lat == null || lng == null) {
+      _latitude = lat;
+      _longitude = lng;
+      _lastLocationUpdateTimestamp = timestamp;
+      if (radius != null && radius > 0) {
+        _maxDistanceKm = radius;
+        if (_distanceKm > _maxDistanceKm) {
+          _distanceKm = _maxDistanceKm;
+        }
+      }
+      return;
+    }
+    final bool isInitialSync = _lastLocationUpdateTimestamp == -1;
+    final bool locationChanged = _latitude != lat || _longitude != lng;
+    final bool timestampChanged = timestamp != _lastLocationUpdateTimestamp && !isInitialSync && timestamp != 0;
+    bool radiusChanged = false;
+    if (radius != null && radius > 0) {
+      if (_maxDistanceKm != radius) {
+        _maxDistanceKm = radius;
+        radiusChanged = true;
+      }
+    }
+
+    _latitude = lat;
+    _longitude = lng;
+    _lastLocationUpdateTimestamp = timestamp;
+
+    if (locationChanged || radiusChanged || timestampChanged || _distanceKm > _maxDistanceKm) {
+      if (locationChanged || radiusChanged || _distanceKm > _maxDistanceKm) {
+        _distanceKm = _maxDistanceKm;
+      }
+      fetchHomePosts(refresh: true);
+      fetchGivePosts(refresh: true);
+      fetchTakePosts(refresh: true);
+    }
+  }
+
+  void setLocation(double? lat, double? lng, {bool triggerFetch = false, double? radius}) {
+    bool changed = _latitude != lat || _longitude != lng;
+    if (radius != null && radius > 0) {
+      if (_maxDistanceKm != radius || _distanceKm > radius || changed) {
+        _maxDistanceKm = radius;
+        _distanceKm = _maxDistanceKm;
+        changed = true;
+      }
+    }
     _latitude = lat;
     _longitude = lng;
     notifyListeners();
+    if (triggerFetch && changed) {
+      fetchHomePosts(refresh: true);
+      fetchGivePosts(refresh: true);
+      fetchTakePosts(refresh: true);
+    }
   }
 
   void updateFilters({
@@ -359,7 +415,7 @@ class TradeController extends ChangeNotifier {
     _selectedDistanceSort = 'Nearest First';
     _selectedDateSort = '';
     _selectedPostType = 'all';
-    _distanceKm = 10.0;
+    _distanceKm = _maxDistanceKm > 0.01 ? _maxDistanceKm : 10.0;
     _giveSearchQuery = '';
     _takeSearchQuery = '';
     _homeSearchQuery = '';

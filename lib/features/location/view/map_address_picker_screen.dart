@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:tool_bocs/core/controller/location_controller.dart';
 import 'package:tool_bocs/core/services/location_service.dart';
+import 'package:tool_bocs/core/services/local_location_service.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/address/controller/address_controller.dart';
@@ -68,8 +69,9 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     _isDefault = widget.editAddress?.isDefault == 1;
     if (widget.editAddress != null) {
       _initEditAddress();
+    } else {
+      _initLocation();
     }
-    _getCurrentLocation();
   }
 
   void _initEditAddress() {
@@ -77,6 +79,15 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     _lastMapPosition = LatLng(addr.latitude, addr.longitude);
     _currentAddress = addr.address;
     _areaController.text = addr.address;
+
+    double? savedRadius = addr.radius;
+    if (addr.id != null) {
+      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.id!.toString());
+    } else {
+      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.address.trim());
+    }
+    _radius = savedRadius ?? 10.0;
+    _currentZoom = _getZoomForRadius(_radius);
 
     final validLabels = ['Home', 'Work', 'Office', 'Hotel', 'Other'];
 
@@ -328,7 +339,6 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                 onChanged: (val) {
                   setState(() => _radius = val);
                   _updateCameraZoom(val);
-                  context.read<LocationController>().setRadius(val);
                 },
               ),
             ),
@@ -403,6 +413,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
+      tiltGesturesEnabled: false,
     );
   }
 
@@ -835,6 +846,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: 1,
+        radius: _radius,
       );
 
       setState(() => _isSaving = true);
@@ -865,6 +877,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: addressController.addresses.isEmpty ? 1 : 0,
+        radius: _radius,
       );
 
       setState(() => _isSaving = true);
@@ -1160,6 +1173,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: _isDefault ? 1 : 0,
+        radius: _radius,
       );
 
       setState(() => _isSaving = true);
@@ -1193,6 +1207,7 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         longitude: _lastMapPosition.longitude,
         isDefault:
             _isDefault ? 1 : (addressController.addresses.isEmpty ? 1 : 0),
+        radius: _radius,
       );
 
       setState(() => _isSaving = true);

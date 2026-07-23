@@ -58,7 +58,7 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                     children: [
                       _buildTradeBegunCard(response, post, isOwner),
                       SizedBox(height: 24.h),
-                      if (response.status == 'pending') ...[
+                      if (response.status == 'pending' && isOwner) ...[
                         Text(
                           'Meeting Preferences',
                           style: TextStyle(
@@ -78,9 +78,21 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                           ),
                         ),
                         SizedBox(height: 20.h),
-                      ],
-                      if (response.status == 'pending' && isOwner)
                         _buildAcceptRejectSection(response),
+                      ] else if (response.status == 'pending' && !isOwner) ...[
+                        SizedBox(height: 30.h),
+                        Center(
+                          child: Text(
+                            'Waiting for ${response.posterName ?? 'owner'} to respond...',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: context.subTextColor,
+                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                       if (response.status == 'rejected' &&
                           response.rejectedReason != null) ...[
                         SizedBox(height: 12.h),
@@ -195,9 +207,9 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
       if (offeringType == 'price') {
         offeringText = 'Paying ₹${ps?.toInt()} - ₹${pe?.toInt()}';
       } else if (offeringType == 'item') {
-        offeringText = 'Offering you ${itm ?? 'an item'}';
+        offeringText = 'Offering ${itm ?? 'an item'}';
       } else {
-        offeringText = 'Asking for free';
+        offeringText = 'Giving Nothing in return';
       }
     } else {
       String offeringType = response.responseType.toLowerCase();
@@ -213,6 +225,13 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
         offeringText = 'Offering for free';
       }
     }
+
+    bool isFreeReturn = offeringText == 'Giving Nothing in return' ||
+        offeringText == 'Offering for free' ||
+        response.responseType.toLowerCase() == 'free' ||
+        (response.responseType.toLowerCase() == 'existing' &&
+            post != null &&
+            post.returnType.toLowerCase() == 'free');
 
     return Container(
       padding: EdgeInsets.all(16.w),
@@ -278,7 +297,7 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                           ),
                           TextSpan(
                             text: isOwner
-                                ? 'responded to your post :\n'
+                                ? 'responded to your post\n'
                                 : 'responded to ',
                             style: TextStyle(
                               fontSize: 14.sp,
@@ -287,7 +306,7 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                           if (!isOwner)
                             TextSpan(
                               text:
-                                  '${response.posterName ?? 'the owner'}\'s post :\n',
+                                  '${response.posterName ?? 'the owner'}\'s post\n',
                               style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   color: context.textColor,
@@ -298,15 +317,15 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                                         context, response.posterUserId),
                             ),
                           if (isGivePost) ...[
-                            TextSpan(text: offeringText),
-                            const TextSpan(text: ' -\nTaking '),
+                            const TextSpan(text: 'Taking '),
                             TextSpan(
                               text: post?.itemName ?? 'your product',
                               style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   color: context.textColor),
                             ),
-                            const TextSpan(text: ' in return'),
+                            const TextSpan(text: '\n'),
+                            TextSpan(text: offeringText),
                           ] else ...[
                             const TextSpan(text: 'Providing '),
                             TextSpan(
@@ -315,14 +334,13 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                                   fontWeight: FontWeight.w800,
                                   color: context.textColor),
                             ),
-                            const TextSpan(text: ' -\n'),
+                            const TextSpan(text: '\n'),
                             TextSpan(text: offeringText),
-                            const TextSpan(text: ' in return'),
                           ],
                         ],
                       ),
                     ),
-                    if (response.responseType != 'price')
+                    if (response.responseType != 'price' && !isFreeReturn)
                       Padding(
                         padding: EdgeInsets.only(top: 8.h),
                         child: GestureDetector(
@@ -345,33 +363,40 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
               ),
               if (response.responseType != 'price') ...[
                 SizedBox(width: 12.w),
-                Container(
-                  width: 100.w,
-                  height: 100.w,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12.r),
-                    image: DecorationImage(
-                      image: response.itemImages.isNotEmpty
-                          ? NetworkImage(AppCachedImage.getFormattedUrl(
-                              response.itemImages.first))
-                          : (response.postItemImages.isNotEmpty)
-                              ? NetworkImage(AppCachedImage.getFormattedUrl(
-                                  response.postItemImages.first))
-                              : (post != null && post.itemImages.isNotEmpty)
-                                  ? NetworkImage(AppCachedImage.getFormattedUrl(
-                                      post.itemImages.first))
-                                  : const AssetImage('assets/iphone.png')
-                                      as ImageProvider,
-                      fit: BoxFit.cover,
+                GestureDetector(
+                  onTap: () => _showProductDetailsBottomSheet(context, response, post, isOwner),
+                  child: Container(
+                    width: 100.w,
+                    height: 100.w,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12.r),
+                      image: DecorationImage(
+                        image: response.itemImages.isNotEmpty
+                            ? NetworkImage(AppCachedImage.getFormattedUrl(
+                                response.itemImages.first))
+                            : (response.givingItemImages != null &&
+                                    response.givingItemImages!.isNotEmpty)
+                                ? NetworkImage(AppCachedImage.getFormattedUrl(
+                                    response.givingItemImages!.first))
+                                : (response.postItemImages.isNotEmpty)
+                                    ? NetworkImage(AppCachedImage.getFormattedUrl(
+                                        response.postItemImages.first))
+                                : (post != null && post.itemImages.isNotEmpty)
+                                    ? NetworkImage(AppCachedImage.getFormattedUrl(
+                                        post.itemImages.first))
+                                    : const AssetImage('assets/iphone.png')
+                                        as ImageProvider,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
               ],
             ],
           ),
-          if (_showMoreDetails && response.responseType != 'price') ...[
+          if (_showMoreDetails && response.responseType != 'price' && !isFreeReturn) ...[
             SizedBox(height: 16.h),
-            _buildItemDetailMiniCard(response),
+            _buildItemDetailMiniCard(response, post, isOwner),
           ],
           if (response.status == 'rejected' &&
               response.rejectedReason != null) ...[
@@ -472,103 +497,428 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
     );
   }
 
-  Widget _buildItemDetailMiniCard(TradeResponseModel response) {
+  Widget _buildItemDetailMiniCard(TradeResponseModel response, dynamic post, bool isOwner) {
+    return GestureDetector(
+      onTap: () => _showProductDetailsBottomSheet(context, response, post, isOwner),
+      child: Container(
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: context.surfaceColor,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: context.dividerColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 70.w,
+              height: 70.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.r),
+                image: DecorationImage(
+                  image: response.itemImages.isNotEmpty
+                      ? NetworkImage(AppCachedImage.getFormattedUrl(
+                          response.itemImages.first))
+                      : (response.givingItemImages != null &&
+                              response.givingItemImages!.isNotEmpty)
+                          ? NetworkImage(AppCachedImage.getFormattedUrl(
+                              response.givingItemImages!.first))
+                          : (response.postItemImages.isNotEmpty)
+                              ? NetworkImage(AppCachedImage.getFormattedUrl(
+                                  response.postItemImages.first))
+                          : (context.read<TradeController>().selectedPost !=
+                                      null &&
+                                  context
+                                      .read<TradeController>()
+                                      .selectedPost!
+                                      .itemImages
+                                      .isNotEmpty)
+                              ? NetworkImage(AppCachedImage.getFormattedUrl(
+                                  context
+                                      .read<TradeController>()
+                                      .selectedPost!
+                                      .itemImages
+                                      .first))
+                              : const AssetImage('assets/iphone.png')
+                                  as ImageProvider,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    response.itemName ?? 'Price Offer',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      color: context.textColor,
+                    ),
+                  ),
+                  Text(
+                    response.itemCondition ??
+                        (response.responseType == 'price'
+                            ? 'Cash Offer'
+                            : 'Unknown'),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: context.primaryColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: context.subTextColor,
+                        fontFamily: FontFamily.openSans,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Category : '),
+                        TextSpan(
+                            text: response.itemCategory ?? 'Other',
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: context.primaryColor,
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      response.responseType.toUpperCase(),
+                      style: TextStyle(
+                        color: context.onPrimaryColor,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showProductDetailsBottomSheet(
+    BuildContext context,
+    TradeResponseModel response,
+    dynamic post,
+    bool isOwner,
+  ) {
+    final List<String> images = response.itemImages.isNotEmpty
+        ? response.itemImages
+        : (response.givingItemImages != null &&
+                response.givingItemImages!.isNotEmpty)
+            ? response.givingItemImages!
+            : (response.postItemImages.isNotEmpty
+                ? response.postItemImages
+                : (post != null && post.itemImages != null && post.itemImages.isNotEmpty
+                    ? List<String>.from(post.itemImages)
+                    : []));
+
+    final String productName = response.itemName ??
+        (response.responseType == 'price'
+            ? 'Cash / Price Offer'
+            : (post?.returnItemName ?? post?.itemName ?? 'Product Item'));
+
+    final String category = response.itemCategory ?? 'Other';
+    final String condition = response.itemCondition ?? 'Like New';
+    final String description = (response.itemDescription != null && response.itemDescription!.trim().isNotEmpty)
+        ? response.itemDescription!
+        : 'No detailed description provided for this item.';
+
+    final String partnerRoleText = isOwner
+        ? 'Offered by ${response.responderName}'
+        : 'Your offer to ${response.posterName ?? "owner"}';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+        ),
+        decoration: BoxDecoration(
+          color: ctx.surfaceColor,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24.r),
+            topRight: Radius.circular(24.r),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 12.h),
+            Container(
+              width: 50.w,
+              height: 5.h,
+              decoration: BoxDecoration(
+                color: ctx.dividerColor,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Product Details',
+                      style: TextStyle(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: FontFamily.openSans,
+                        color: ctx.textColor,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      padding: EdgeInsets.all(6.w),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ctx.dividerColor.withOpacity(0.3),
+                      ),
+                      child: Icon(Icons.close, size: 20.sp, color: ctx.textColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Divider(height: 1, color: ctx.dividerColor),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(20.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (images.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        height: 240.h,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.r),
+                          color: ctx.scaffoldBg,
+                          image: DecorationImage(
+                            image: NetworkImage(AppCachedImage.getFormattedUrl(images.first)),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      if (images.length > 1) ...[
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          height: 60.h,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: images.length,
+                            separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                            itemBuilder: (context, index) {
+                              return Container(
+                                width: 60.w,
+                                height: 60.h,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(color: ctx.primaryColor, width: 1.5.w),
+                                  image: DecorationImage(
+                                    image: NetworkImage(AppCachedImage.getFormattedUrl(images[index])),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ] else ...[
+                      Container(
+                        width: double.infinity,
+                        height: 180.h,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.r),
+                          color: ctx.scaffoldBg,
+                          image: const DecorationImage(
+                            image: AssetImage('assets/iphone.png'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: 20.h),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            productName,
+                            style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: FontFamily.openSans,
+                              color: ctx.textColor,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                          decoration: BoxDecoration(
+                            color: ctx.primaryColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20.r),
+                          ),
+                          child: Text(
+                            response.responseType.toUpperCase(),
+                            style: TextStyle(
+                              color: ctx.primaryColor,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+                    Container(
+                      padding: EdgeInsets.all(14.w),
+                      decoration: BoxDecoration(
+                        color: ctx.primaryColor.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: ctx.primaryColor.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20.r,
+                            backgroundColor: ctx.primaryColor.withOpacity(0.2),
+                            backgroundImage: response.responderImage != null && response.responderImage!.isNotEmpty
+                                ? NetworkImage(AppCachedImage.getFormattedUrl(response.responderImage!))
+                                : null,
+                            child: (response.responderImage == null || response.responderImage!.isEmpty)
+                                ? Icon(Icons.person, color: ctx.primaryColor, size: 22.sp)
+                                : null,
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  partnerRoleText,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: ctx.textColor,
+                                  ),
+                                ),
+                                SizedBox(height: 2.h),
+                                Text(
+                                  post != null ? 'In exchange for: ${post.itemName ?? "Post Item"}' : 'Trade Request Item',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: ctx.subTextColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDetailSectionChip(ctx, 'Category', category, Icons.category_outlined),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: _buildDetailSectionChip(ctx, 'Condition', condition, Icons.verified_outlined),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20.h),
+                    Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: FontFamily.openSans,
+                        color: ctx.textColor,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16.w),
+                      decoration: BoxDecoration(
+                        color: ctx.scaffoldBg,
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: ctx.dividerColor),
+                      ),
+                      child: Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: ctx.textColor.withOpacity(0.85),
+                          height: 1.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24.h),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailSectionChip(BuildContext ctx, String label, String value, IconData icon) {
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
-        color: context.surfaceColor,
+        color: ctx.scaffoldBg,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: context.dividerColor),
+        border: Border.all(color: ctx.dividerColor),
       ),
       child: Row(
         children: [
-          Container(
-            width: 70.w,
-            height: 70.h,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8.r),
-              image: DecorationImage(
-                image: response.itemImages.isNotEmpty
-                    ? NetworkImage(AppCachedImage.getFormattedUrl(
-                        response.itemImages.first))
-                    : (response.postItemImages.isNotEmpty)
-                        ? NetworkImage(AppCachedImage.getFormattedUrl(
-                            response.postItemImages.first))
-                        : (context.read<TradeController>().selectedPost !=
-                                    null &&
-                                context
-                                    .read<TradeController>()
-                                    .selectedPost!
-                                    .itemImages
-                                    .isNotEmpty)
-                            ? NetworkImage(AppCachedImage.getFormattedUrl(
-                                context
-                                    .read<TradeController>()
-                                    .selectedPost!
-                                    .itemImages
-                                    .first))
-                            : const AssetImage('assets/iphone.png')
-                                as ImageProvider,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          SizedBox(width: 12.w),
+          Icon(icon, size: 20.sp, color: ctx.primaryColor),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  response.itemName ?? 'Price Offer',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w800,
-                    color: context.textColor,
-                  ),
+                  label,
+                  style: TextStyle(fontSize: 11.sp, color: ctx.subTextColor, fontWeight: FontWeight.w600),
                 ),
+                SizedBox(height: 2.h),
                 Text(
-                  response.itemCondition ??
-                      (response.responseType == 'price'
-                          ? 'Cash Offer'
-                          : 'Unknown'),
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: context.primaryColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: context.subTextColor,
-                      fontFamily: FontFamily.openSans,
-                    ),
-                    children: [
-                      const TextSpan(text: 'Category : '),
-                      TextSpan(
-                          text: response.itemCategory ?? 'Other',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: context.primaryColor,
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                  child: Text(
-                    response.responseType.toUpperCase(),
-                    style: TextStyle(
-                      color: context.onPrimaryColor,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800, color: ctx.textColor),
                 ),
               ],
             ),
@@ -770,7 +1120,9 @@ class _TradeStartScreenState extends State<TradeStartScreen> {
                 child: CircularProgressIndicator(
                     color: context.onPrimaryColor, strokeWidth: 2))
             : Text(
-                isAlreadyAccepted && isOwner ? 'Go to Chat' : 'Continue',
+                isAlreadyAccepted && isOwner 
+                    ? ((response?.paymentStatus == 'paid' || response?.status == 'paid' || response?.status == 'completed') ? 'Go to Chat' : 'Continue') 
+                    : 'Continue',
                 style: TextStyle(
                   color: context.onPrimaryColor,
                   fontWeight: FontWeight.w700,

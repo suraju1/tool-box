@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:tool_bocs/core/controller/location_controller.dart';
 import 'package:tool_bocs/core/services/location_service.dart';
+import 'package:tool_bocs/core/services/local_location_service.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/address/controller/address_controller.dart';
@@ -97,6 +98,15 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
     _currentAddress = addr.address;
     _areaController.text = addr.address;
     _selectedLabel = addr.label;
+
+    double? savedRadius = addr.radius;
+    if (addr.id != null) {
+      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.id!.toString());
+    } else {
+      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.address.trim());
+    }
+    _radius = savedRadius ?? 10.0;
+    _currentZoom = _getZoomForRadius(_radius);
 
     final parts = addr.address.split(', ');
     if (parts.length >= 2) {
@@ -1025,6 +1035,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: _isDefault ? 1 : 0,
+        radius: _radius,
       );
 
       final response = await addressController.updateAddress(
@@ -1052,6 +1063,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
         longitude: _lastMapPosition.longitude,
         isDefault:
             _isDefault ? 1 : (addressController.addresses.isEmpty ? 1 : 0),
+        radius: _radius,
       );
 
       final response = await addressController.saveAddress(newAddress);
@@ -1095,6 +1107,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
         latitude: _lastMapPosition.latitude,
         longitude: _lastMapPosition.longitude,
         isDefault: _isDefault ? 1 : 0,
+        radius: _radius,
       );
 
       final response = await addressController.updateAddress(
@@ -1122,6 +1135,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
         longitude: _lastMapPosition.longitude,
         isDefault:
             _isDefault ? 1 : (addressController.addresses.isEmpty ? 1 : 0),
+        radius: _radius,
       );
 
       final response = await addressController.saveAddress(newAddress);

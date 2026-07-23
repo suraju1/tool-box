@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:tool_bocs/core/services/storage_service.dart';
 import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,6 +36,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
   double _diameter = 5;
   bool _isTemporary = true;
   String _selectedCondition = 'New';
+  bool _isOfferingPriceSelected = false;
+  RangeValues _offeringPriceRange = const RangeValues(10, 50000);
+  bool _isOfferingNegotiable = false;
   bool _isPriceSelected = true;
   RangeValues _priceRange = const RangeValues(10, 50000);
   bool _isNegotiable = false;
@@ -105,7 +109,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
 
   Future<void> _initLocation() async {
     final locationController = context.read<LocationController>();
-    await locationController.fetchLocation();
+    if (!locationController.hasLocation || locationController.address == null) {
+      await locationController.fetchLocation();
+    }
     _updateLocationFromController();
   }
 
@@ -137,10 +143,28 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
       return;
     }
 
-    final List<XFile>? images = await AppImagePickerBS.show(context,
+    final List<XFile>? pickedImages = await AppImagePickerBS.show(context,
         allowMultiple: true, limit: remaining);
 
-    if (images != null && images.isNotEmpty) {
+    if (pickedImages != null && pickedImages.isNotEmpty) {
+      List<XFile> images = [];
+      if (!kIsWeb) {
+        try {
+          final Directory appDocDir = await getApplicationDocumentsDirectory();
+          for (var file in pickedImages) {
+            final String fileName =
+                '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+            final String newPath = '${appDocDir.path}/$fileName';
+            final File newFile = await File(file.path).copy(newPath);
+            images.add(XFile(newFile.path));
+          }
+        } catch (e) {
+          images = pickedImages; // Fallback
+        }
+      } else {
+        images = pickedImages;
+      }
+
       setState(() {
         if (isReturnItem) {
           if (_returnItemImages.length + images.length > 5) {
@@ -274,7 +298,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                 child: Text(
                   'Restore Draft',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.onPrimaryColor,
                     fontWeight: FontWeight.w600,
                     fontSize: 14.sp,
                   ),
@@ -345,164 +369,157 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
       },
       child: Scaffold(
         backgroundColor: context.scaffoldBg,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-        child: Form(
-          key: _formKey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              //app bar here
-              SizedBox(height: 6.h),
-              _buildAppBar(),
-              Divider(
-                color: context.dividerColor,
-                thickness: 1,
-                height: 10.h,
-              ),
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: context.dividerColor),
-                  boxShadow: context.isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: greyColorWithOpacity0_4,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+        body: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          child: Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                //app bar here
+                SizedBox(height: 6.h),
+                _buildAppBar(),
+                Divider(
+                  color: context.dividerColor,
+                  thickness: 1,
+                  height: 10.h,
                 ),
-                child: Column(
-                  children: [
-                    _buildLocationSection(),
-                    SizedBox(height: 20.h),
-                    // _buildTradeDetailsSection(),
-                    // SizedBox(height: 20.h),
-                  ],
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+                  decoration: BoxDecoration(
+                    color: context.surfaceColor,
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: context.dividerColor),
+                    boxShadow: context.isDarkMode
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: greyColorWithOpacity0_4,
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildLocationSection(),
+                      SizedBox(height: 20.h),
+                      // _buildTradeDetailsSection(),
+                      // SizedBox(height: 20.h),
+                    ],
+                  ),
                 ),
-              ),
-              SizedBox(height: 8.h),
-              //add item details section
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: context.dividerColor),
-                  boxShadow: context.isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: greyColorWithOpacity0_4,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                SizedBox(height: 8.h),
+                //add item details and note section attached in one card
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+                  decoration: BoxDecoration(
+                    color: context.primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                        color: context.primaryColor.withOpacity(0.2),
+                        width: 1.5),
+                    boxShadow: context.isDarkMode
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: greyColorWithOpacity0_4,
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildItemDetailsSection(),
+                      if (!_isOfferingPriceSelected) ...[
+                        SizedBox(height: 20.h),
+                        _buildNoteSection(),
+                      ],
+                    ],
+                  ),
                 ),
-                child: _buildItemDetailsSection(),
-              ),
-              SizedBox(height: 8.h),
-              SizedBox(height: 8.h),
-              //note section
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: context.dividerColor),
-                  boxShadow: context.isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: greyColorWithOpacity0_4,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                SizedBox(height: 8.h),
+                //return section
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+                  decoration: BoxDecoration(
+                    color: context.primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                        color: context.primaryColor.withOpacity(0.2),
+                        width: 1.5),
+                    boxShadow: context.isDarkMode
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: context.primaryColor.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildReturnSection(),
+                      // SizedBox(height: 20.h),
+                      // _buildWalletAndNotificationSection(),
+                      // SizedBox(height: 30.h),
+                      // _buildPostButton(),
+                    ],
+                  ),
                 ),
-                child: _buildNoteSection(),
-              ),
-              SizedBox(height: 8.h),
-              //return section
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
-                decoration: BoxDecoration(
-                  color: context.primaryColor.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                      color: context.primaryColor.withOpacity(0.2), width: 1.5),
-                  boxShadow: context.isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: context.primaryColor.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                SizedBox(height: 8.h),
+                // Trade Details & Wallet Section
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 8.h),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 12.h,
+                    horizontal: 12.w,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.surfaceColor,
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: context.dividerColor),
+                    boxShadow: context.isDarkMode
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: greyColorWithOpacity0_4,
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildTradeDetailsSection(),
+                      SizedBox(height: 12.h),
+                      Divider(color: context.dividerColor, thickness: 1),
+                      SizedBox(height: 12.h),
+                      _buildWalletAndNotificationSection(),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildReturnSection(),
-                    // SizedBox(height: 20.h),
-                    // _buildWalletAndNotificationSection(),
-                    // SizedBox(height: 30.h),
-                    // _buildPostButton(),
-                  ],
-                ),
-              ),
-              SizedBox(height: 8.h),
-              // Trade Details & Wallet Section
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                padding: EdgeInsets.symmetric(
-                  vertical: 12.h,
-                  horizontal: 12.w,
-                ),
-                decoration: BoxDecoration(
-                  color: context.surfaceColor,
-                  borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: context.dividerColor),
-                  boxShadow: context.isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: greyColorWithOpacity0_4,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                child: Column(
-                  children: [
-                    _buildTradeDetailsSection(),
-                    SizedBox(height: 12.h),
-                    Divider(color: context.dividerColor, thickness: 1),
-                    SizedBox(height: 12.h),
-                    _buildWalletAndNotificationSection(),
-                  ],
-                ),
-              ),
 
-              //build post button
-              SizedBox(height: 20.h),
-              _buildPostButton(),
+                //build post button
+                SizedBox(height: 20.h),
+                _buildPostButton(),
 
-              SizedBox(height: 30.h),
-            ],
+                SizedBox(height: 30.h),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -547,7 +564,9 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '${(context.watch<LocationController>().label ?? "LOCATION").toUpperCase()} - ',
+                          text: context
+                              .watch<LocationController>()
+                              .headerBoldPrefix,
                           style: TextStyle(
                             color: context.textColor,
                             fontWeight: FontWeight.bold,
@@ -555,8 +574,14 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                           ),
                         ),
                         TextSpan(
-                          text: context.watch<LocationController>().address ?? _pickupAddress,
-                          style: TextStyle(fontSize: 13.sp, color: context.textColor),
+                          text: context.watch<LocationController>().address !=
+                                  null
+                              ? context
+                                  .watch<LocationController>()
+                                  .headerAddressText
+                              : _pickupAddress,
+                          style: TextStyle(
+                              fontSize: 13.sp, color: context.textColor),
                         ),
                       ],
                     ),
@@ -596,7 +621,6 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           inactiveColor: context.dividerColor,
           onChanged: (val) {
             setState(() => _diameter = val);
-            context.read<LocationController>().setRadius(val);
           },
         ),
         SizedBox(height: 15.h),
@@ -612,28 +636,41 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.tradeDetails,
-            style: _labelStyle(size: 14)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(AppLocalizations.of(context)!.tradeDetails,
+                style: _labelStyle(size: 14)),
+            InkWell(
+              borderRadius: BorderRadius.circular(8.r),
+              onTap: () => _showTradeTypeInfoDialog(context),
+              child: Container(
+                height: 34.h,
+                width: 34.h,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.isDarkMode
+                      ? Colors.white.withOpacity(0.05)
+                      : const Color(0xFFF5F7F9),
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(
+                    color: context.isDarkMode
+                        ? Colors.white24
+                        : Colors.grey.shade300,
+                  ),
+                ),
+                child: Icon(
+                  Icons.info_outline,
+                  color: context.primaryColor,
+                  size: 20.sp,
+                ),
+              ),
+            ),
+          ],
+        ),
         SizedBox(height: 8.h),
         Text(AppLocalizations.of(context)!.tradeType,
             style: TextStyle(color: context.subTextColor, fontSize: 12.sp)),
-        SizedBox(height: 4.h),
-        Text(
-          'Temporary: Stays for 48 hours (make it active for free)',
-          style: TextStyle(
-            color: context.subTextColor.withOpacity(0.7),
-            fontSize: 10.sp,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-        Text(
-          'Permanent: Permanently stays on account until you remove it',
-          style: TextStyle(
-            color: context.subTextColor.withOpacity(0.7),
-            fontSize: 10.sp,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
         SizedBox(height: 8.h),
         Container(
           height: 45.h,
@@ -655,6 +692,90 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showTradeTypeInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          backgroundColor: context.surfaceColor,
+          child: Padding(
+            padding: EdgeInsets.all(20.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.tradeType,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: context.textColor,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: context.textColor),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: context.textColor,
+                      height: 1.5,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                    children: const [
+                      TextSpan(
+                        text: 'Temporary: ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text: 'Stays for 48 hours (make it active for free)',
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: context.textColor,
+                      height: 1.5,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                    children: const [
+                      TextSpan(
+                        text: 'Permanent: ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text:
+                            'Permanently stays on account until you remove it',
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 4.h),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -758,42 +879,109 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
   }
 
   Widget _buildItemDetailsSection() {
+    final Object? args = ModalRoute.of(context)?.settings.arguments;
+    final bool isTake = args == 'Create Take Post' ||
+        (args is String && args.toLowerCase().contains('take'));
+    final String headingQuestion = isTake
+        ? AppLocalizations.of(context)!.whatAreYouLookingFor
+        : AppLocalizations.of(context)!.whatAreYouOffering;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.itemDetails,
-            style: _labelStyle(size: 16)),
-        SizedBox(height: 12.h),
-        Text(AppLocalizations.of(context)!.itemName, style: _labelStyle()),
-        SizedBox(height: 8.h),
-        _buildTextField(AppLocalizations.of(context)!.enterItemName,
-            controller: _itemNameController,
-            validator: (val) => _validateRequired(val, 'Item Name')),
-        SizedBox(height: 12.h),
-        _buildAddPhotosSection(),
-        SizedBox(height: 20.h),
-        Text(AppLocalizations.of(context)!.category, style: _labelStyle()),
-        SizedBox(height: 8.h),
-        _buildCategoryToggleSelection(
-          _selectedCategory,
-          (val) => setState(() => _selectedCategory = val),
+        Text(headingQuestion, style: _labelStyle(size: 16)),
+        SizedBox(height: 16.h),
+        Container(
+          height: 48.h,
+          padding: EdgeInsets.all(4.w),
+          decoration: BoxDecoration(
+            color: context.isDarkMode ? Colors.white10 : const Color(0xFFE5E7EB),
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Row(
+            children: [
+              _buildToggleButton(
+                  AppLocalizations.of(context)!.priceLabel, _isOfferingPriceSelected,
+                  () {
+                setState(() => _isOfferingPriceSelected = true);
+              }),
+              _buildToggleButton(
+                  AppLocalizations.of(context)!.itemLabel, !_isOfferingPriceSelected,
+                  () {
+                setState(() => _isOfferingPriceSelected = false);
+              }),
+            ],
+          ),
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: _selectedCategory?.name == 'Goods'
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
+        if (_isOfferingPriceSelected) ...[
+          SizedBox(height: 20.h),
+          Container(
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              border: Border.all(color: context.dividerColor),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppPriceRangeSelector(
+                  initialValues: _offeringPriceRange,
+                  onChanged: (val) => setState(() => _offeringPriceRange = val),
+                ),
+                SizedBox(height: 25.h),
+                Row(
                   children: [
-                    SizedBox(height: 20.h),
-                    _buildConditionSection(),
-                    SizedBox(height: 16.h),
-                    _buildItemSourcesSection(),
+                    SizedBox(
+                      height: 24,
+                      child: Switch(
+                        value: _isOfferingNegotiable,
+                        activeColor: Colors.green,
+                        onChanged: (val) => setState(() => _isOfferingNegotiable = val),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(AppLocalizations.of(context)!.negotiable,
+                        style: TextStyle(
+                            color: context.subTextColor, fontSize: 13.sp)),
                   ],
-                )
-              : const SizedBox.shrink(),
-        ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          SizedBox(height: 16.h),
+          Text(AppLocalizations.of(context)!.itemName, style: _labelStyle()),
+          SizedBox(height: 8.h),
+          _buildTextField(AppLocalizations.of(context)!.enterItemName,
+              controller: _itemNameController,
+              validator: (val) => _validateRequired(val, 'Item Name')),
+          SizedBox(height: 12.h),
+          _buildAddPhotosSection(),
+          SizedBox(height: 20.h),
+          Text(AppLocalizations.of(context)!.category, style: _labelStyle()),
+          SizedBox(height: 8.h),
+          _buildCategoryToggleSelection(
+            _selectedCategory,
+            (val) => setState(() => _selectedCategory = val),
+            hideMoney: true,
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _selectedCategory?.name == 'Goods'
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: 20.h),
+                      _buildConditionSection(),
+                      SizedBox(height: 16.h),
+                      _buildItemSourcesSection(),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
         SizedBox(height: 8.h),
       ],
     );
@@ -926,11 +1114,11 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
             style: _labelStyle(size: 16)),
         SizedBox(height: 16.h),
         Container(
-          height: 45.h,
+          height: 48.h,
+          padding: EdgeInsets.all(4.w),
           decoration: BoxDecoration(
-            color:
-                context.isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10.r),
+            color: context.isDarkMode ? Colors.white10 : const Color(0xFFE5E7EB),
+            borderRadius: BorderRadius.circular(12.r),
           ),
           child: Row(
             children: [
@@ -1106,17 +1294,23 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
         _buildCategoryToggleSelection(
           _selectedReturnCategory,
           (val) => setState(() => _selectedReturnCategory = val),
+          hideMoney: true,
         ),
-        SizedBox(height: 16.h),
-        Text(AppLocalizations.of(context)!.condition, style: _labelStyle()),
-        SizedBox(height: 12.h),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildReturnConditionChip('New'),
-            _buildReturnConditionChip('Like New'),
-            _buildReturnConditionChip('Used'),
-          ],
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _selectedReturnCategory?.name == 'Goods'
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: 16.h),
+                    _buildReturnConditionSection(),
+                    SizedBox(height: 16.h),
+                    _buildReturnItemSourcesSection(),
+                  ],
+                )
+              : const SizedBox.shrink(),
         ),
         SizedBox(height: 16.h),
         Text(AppLocalizations.of(context)!.description, style: _labelStyle()),
@@ -1126,67 +1320,106 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
             controller: _returnItemDescriptionController,
             validator: (val) =>
                 _validateRequired(val, 'Return Item Description')),
-        SizedBox(height: 12.h),
-        Row(
-          children: [
-            Row(
-              children: [
-                SizedBox(
-                  height: 24.w,
-                  width: 24.w,
-                  child: Checkbox(
-                    value: _isReturnHomemade,
-                    activeColor: Colors.green,
-                    onChanged: (val) {
-                      setState(() {
-                        _isReturnHomemade = val ?? false;
-                        if (_isReturnHomemade) _isReturnStoreBought = false;
-                      });
-                    },
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  'Homemade',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontFamily: FontFamily.openSans,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(width: 20.w),
-            Row(
-              children: [
-                SizedBox(
-                  height: 24.w,
-                  width: 24.w,
-                  child: Checkbox(
-                    value: _isReturnStoreBought,
-                    activeColor: Colors.green,
-                    onChanged: (val) {
-                      setState(() {
-                        _isReturnStoreBought = val ?? false;
-                        if (_isReturnStoreBought) _isReturnHomemade = false;
-                      });
-                    },
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  'Store bought',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontFamily: FontFamily.openSans,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
         SizedBox(height: 20.h),
+      ],
+    );
+  }
+
+  Widget _buildReturnConditionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(AppLocalizations.of(context)!.condition, style: _labelStyle()),
+        SizedBox(height: 8.h),
+        DropdownButtonFormField<String>(
+          value: _returnSelectedCondition,
+          icon: Icon(Icons.keyboard_arrow_down, color: context.subTextColor),
+          decoration: InputDecoration(
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.r),
+              borderSide: BorderSide(color: context.dividerColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.r),
+              borderSide: BorderSide(color: context.dividerColor),
+            ),
+            filled: true,
+            fillColor: context.surfaceColor,
+          ),
+          items: ['New', 'Like New', 'Used'].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value,
+                  style: TextStyle(
+                      fontSize: 13.sp,
+                      color: context.textColor,
+                      fontWeight: FontWeight.w500)),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            if (newValue != null) {
+              setState(() {
+                _returnSelectedCondition = newValue;
+              });
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReturnItemSourcesSection() {
+    String? currentSource;
+    if (_isReturnHomemade) currentSource = 'Homemade';
+    if (_isReturnStoreBought) currentSource = 'Store bought';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(AppLocalizations.of(context)!.itemSources, style: _labelStyle()),
+        SizedBox(height: 8.h),
+        DropdownButtonFormField<String>(
+          value: currentSource,
+          hint: Text(AppLocalizations.of(context)!.selectSource,
+              style: TextStyle(fontSize: 13.sp, color: context.subTextColor)),
+          icon: Icon(Icons.keyboard_arrow_down, color: context.subTextColor),
+          decoration: InputDecoration(
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.r),
+              borderSide: BorderSide(color: context.dividerColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.r),
+              borderSide: BorderSide(color: context.dividerColor),
+            ),
+            filled: true,
+            fillColor: context.surfaceColor,
+          ),
+          items: ['Homemade', 'Store bought'].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value,
+                  style: TextStyle(
+                      fontSize: 13.sp,
+                      color: context.textColor,
+                      fontWeight: FontWeight.w500)),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            if (newValue != null) {
+              setState(() {
+                _isReturnHomemade = newValue == 'Homemade';
+                _isReturnStoreBought = newValue == 'Store bought';
+              });
+            }
+          },
+        ),
+        if (_showReturnImageError) // Optionally show an error if you want, but sticking to existing logic
+          const SizedBox.shrink(),
       ],
     );
   }
@@ -1424,24 +1657,26 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
       isValid = false;
     }
 
-    // Validate Category
-    if (_selectedCategory == null) {
-      ToastService.showErrorToast(
-          context, 'Please select a category for the item');
-      isValid = false;
-    }
+    if (!_isOfferingPriceSelected) {
+      // Validate Category
+      if (_selectedCategory == null) {
+        ToastService.showErrorToast(
+            context, 'Please select a category for the item');
+        isValid = false;
+      }
 
-    // Validate Images
-    if (_itemImages.isEmpty) {
-      setState(() => _showImageError = true);
-      // ToastService.showErrorToast(context, 'Please add at least 1 photo of the item');
-      isValid = false;
-    }
+      // Validate Images
+      if (_itemImages.isEmpty) {
+        setState(() => _showImageError = true);
+        // ToastService.showErrorToast(context, 'Please add at least 1 photo of the item');
+        isValid = false;
+      }
 
-    // Validate Source (Homemade/Store Bought)
-    if (!_isHomemade && !_isStoreBought) {
-      setState(() => _showSourceError = true);
-      isValid = false;
+      // Validate Source (Homemade/Store Bought)
+      if (!_isHomemade && !_isStoreBought) {
+        setState(() => _showSourceError = true);
+        isValid = false;
+      }
     }
 
     // Validate Return Item Details (if applicable)
@@ -1492,16 +1727,22 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
       longitude: _longitude!,
       areaDiameter: _diameter,
       tradeType: _isTemporary ? "Temporary" : "Permanent",
-      itemName: _itemNameController.text,
-      itemCategory: _selectedCategory!.name,
-      itemCategoryId: _selectedCategory!.id,
-      itemCondition: _selectedCondition,
+      itemName: _isOfferingPriceSelected
+          ? '₹${_offeringPriceRange.start.toInt()} - ₹${_offeringPriceRange.end.toInt()}'
+          : _itemNameController.text,
+      itemCategory: _isOfferingPriceSelected
+          ? 'Money'
+          : _selectedCategory!.name,
+      itemCategoryId: _isOfferingPriceSelected ? 14 : _selectedCategory!.id,
+      itemCondition: _isOfferingPriceSelected ? 'NA' : _selectedCondition,
       itemNote: _itemNoteController.text,
-      itemSource: _isHomemade ? "Homemade" : "Store bought",
+      itemSource: _isOfferingPriceSelected
+          ? 'NA'
+          : (_isHomemade ? "Homemade" : "Store bought"),
       returnType: _isPriceSelected ? "Price" : "Item",
       priceMin: _isPriceSelected ? _priceRange.start : null,
       priceMax: _isPriceSelected ? _priceRange.end : null,
-      isNegotiable: _isNegotiable,
+      isNegotiable: _isOfferingPriceSelected ? _isOfferingNegotiable : _isNegotiable,
       walletCredits: (double.tryParse(context
                       .read<SubscriptionController>()
                       .mySubscription
@@ -1620,7 +1861,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
             child: Text(
               AppLocalizations.of(context)!.buySubscription,
               style: TextStyle(
-                color: Colors.white,
+                color: context.onPrimaryColor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1673,7 +1914,8 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
   }
 
   Widget _buildCategoryToggleSelection(
-      CategoryModel? currentValue, Function(CategoryModel) onSelected) {
+      CategoryModel? currentValue, Function(CategoryModel) onSelected,
+      {bool hideMoney = false}) {
     return Consumer<TradeController>(
       builder: (context, tradeController, child) {
         Widget buildBtn(String label) {
@@ -1727,8 +1969,10 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
             buildBtn('Goods'),
             SizedBox(width: 10.w),
             buildBtn('Services'),
-            SizedBox(width: 10.w),
-            buildBtn('Money'),
+            if (!hideMoney) ...[
+              SizedBox(width: 10.w),
+              buildBtn('Money'),
+            ],
           ],
         );
       },
@@ -1739,18 +1983,30 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? context.primaryColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(10.r),
+            color: isSelected
+                ? context.primaryColor
+                : (context.isDarkMode ? Colors.transparent : context.surfaceColor),
+            borderRadius: BorderRadius.circular(9.r),
+            boxShadow: isSelected || !context.isDarkMode
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : [],
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? context.onPrimaryColor : context.subTextColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 12.sp,
+              color: isSelected ? context.onPrimaryColor : context.textColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 13.sp,
             ),
           ),
         ),
@@ -1830,7 +2086,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
           PopupMenuButton<void>(
             offset: const Offset(-200, 45),
             shape: PopupMenuArrowShape(borderRadius: 12.r),
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             elevation: 4,
             itemBuilder: (context) => [
               PopupMenuItem<void>(
@@ -1851,7 +2107,7 @@ class _CreateGivePostScreenState extends State<CreateGivePostScreen> {
                               child: Text(
                                 text,
                                 style: TextStyle(
-                                  color: const Color(0xFF111311),
+                                  color: context.textColor,
                                   fontSize: 13.sp,
                                   fontWeight: FontWeight.w600,
                                   fontFamily: FontFamily.openSans,

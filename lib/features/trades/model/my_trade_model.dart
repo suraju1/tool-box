@@ -66,6 +66,7 @@ class MyTradeModel {
   final String? givingItemCondition;
   final String? returnItemName;
   final String? returnItemCondition;
+  final double? distanceKm;
 
   MyTradeModel({
     required this.id,
@@ -86,10 +87,12 @@ class MyTradeModel {
     this.givingItemCondition,
     this.returnItemName,
     this.returnItemCondition,
+    this.distanceKm,
   });
 
   MyTradeModel copyWith({
     String? status,
+    double? distanceKm,
   }) {
     return MyTradeModel(
       id: id,
@@ -110,6 +113,7 @@ class MyTradeModel {
       givingItemCondition: givingItemCondition,
       returnItemName: returnItemName,
       returnItemCondition: returnItemCondition,
+      distanceKm: distanceKm ?? this.distanceKm,
     );
   }
 
@@ -149,6 +153,7 @@ class MyTradeModel {
       givingItemCondition: json['giving_item_condition'],
       returnItemName: json['return_item_name'],
       returnItemCondition: json['return_item_condition'],
+      distanceKm: double.tryParse(json['distance_km']?.toString() ?? json['distance']?.toString() ?? ''),
     );
   }
 }

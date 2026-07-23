@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tool_bocs/core/services/notification_service.dart';
 import 'package:tool_bocs/core/services/storage_service.dart';
 import 'package:tool_bocs/features/login_and_signup/model/user_model.dart';
+import 'package:tool_bocs/features/profile/service/profile_service.dart';
 
 // Top-level function for background handling
 @pragma('vm:entry-point')
@@ -25,9 +26,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("Data: ${message.data}");
   debugPrint("Notification: ${message.notification?.title} - ${message.notification?.body}");
 
-  // 2. Show local notification
-  // We show it if it has a notification block OR a data block (for chat)
-  if (message.notification != null || message.data.isNotEmpty) {
+  // 2. Show local notification ONLY IF it is a data-only message (where message.notification is null).
+  // When message.notification != null, the OS automatically displays a system notification in background/terminated state.
+  // Showing a local notification when message.notification != null causes duplicate notifications!
+  if (message.notification == null && message.data.isNotEmpty) {
     final notificationService = NotificationService();
     // We must re-init local notifications in the background isolate
     await notificationService.init();
@@ -124,6 +126,7 @@ class FirebaseNotificationService {
         if (userData != null) {
           final user = UserModel.fromJson(jsonDecode(userData));
           await _saveToken(token, user.id.toString(), fullName: user.fullName);
+          await _syncTokenToBackend(token);
         }
       });
     }
@@ -141,10 +144,23 @@ class FirebaseNotificationService {
         if (token != null) {
           await _saveToken(token, userId,
               fullName: user.fullName, profileImageUrl: profileImageUrl);
+          await _syncTokenToBackend(token);
         }
       } catch (e) {
         debugPrint("Error saving FCM token: $e");
       }
+    }
+  }
+
+  Future<void> _syncTokenToBackend(String token) async {
+    try {
+      final tokenSaved = await StorageService.getAuthToken();
+      if (tokenSaved != null && tokenSaved.isNotEmpty) {
+        await ProfileService().updateGeneralProfile({'fcm_token': token});
+        debugPrint("FCM token successfully synced with MySQL Backend");
+      }
+    } catch (e) {
+      debugPrint("Error syncing FCM token with MySQL Backend: $e");
     }
   }
 

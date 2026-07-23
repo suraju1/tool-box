@@ -420,8 +420,7 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
             ? 'Giving you ₹$startPrice in return'
             : 'Giving you ₹$startPrice - ₹$endPrice in return';
       } else {
-        subText =
-            '(Category: ${response.itemCategory ?? 'Unknown'} | Condition: ${response.itemCondition ?? 'Unknown'})';
+        subText = 'Giving nothing in return';
       }
     } else {
       final postItem = response.postItemName ?? 'item';
@@ -651,13 +650,13 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
                   Icon(
                     Icons.help_outline,
                     size: 20,
-                    color: context.primaryColor,
+                    color: context.textColor,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     AppLocalizations.of(context)!.helpSupport,
                     style: TextStyle(
-                      color: context.primaryColor,
+                      color: context.textColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       fontFamily: FontFamily.openSans,
@@ -827,6 +826,10 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
 
   Widget _buildActionButton(
       String label, Color bgColor, Color textColor, VoidCallback onTap) {
+    final effectiveTextColor =
+        (bgColor == context.primaryColor && textColor == Colors.white)
+            ? context.onPrimaryColor
+            : textColor;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
@@ -839,7 +842,7 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
         child: Text(
           label,
           style: GoogleFonts.inter(
-            color: textColor,
+            color: effectiveTextColor,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -850,12 +853,35 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
 
   Widget _buildGeneralNotificationsView(BuildContext context) {
     final notificationController = context.watch<NotificationController>();
+    final tradeController = context.watch<TradeController>();
+    final activePostIds = <int>{
+      ...tradeController.sentResponses
+          .where((r) =>
+              r.status?.toLowerCase() != 'rejected' &&
+              r.status?.toLowerCase() != 'deleted')
+          .map((r) => r.postId),
+      ...tradeController.postResponses
+          .where((r) =>
+              r.status?.toLowerCase() != 'rejected' &&
+              r.status?.toLowerCase() != 'deleted')
+          .map((r) => r.postId),
+    };
+
+    final filteredNotifications = notificationController.notifications.where((n) {
+      if (n.notificationTitle.toLowerCase().contains("new post nearby") &&
+          n.referenceId != null) {
+        if (activePostIds.contains(n.referenceId)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
 
     if (notificationController.isLoading) {
       return _buildShimmer(context);
     }
 
-    if (notificationController.notifications.isEmpty) {
+    if (filteredNotifications.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -881,7 +907,7 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
           notificationController.fetchNotifications(isRefresh: true),
       child: Column(
         children: [
-          if (notificationController.notifications.isNotEmpty)
+          if (filteredNotifications.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
               child: Row(
@@ -906,10 +932,10 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.only(bottom: 20),
-              itemCount: notificationController.notifications.length +
+              itemCount: filteredNotifications.length +
                   (notificationController.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index == notificationController.notifications.length) {
+                if (index == filteredNotifications.length) {
                   notificationController.loadMore();
                   return const Center(
                       child: Padding(
@@ -917,8 +943,7 @@ class _WebNotificationsScreenState extends State<WebNotificationsScreen> {
                           child: CircularProgressIndicator()));
                 }
 
-                final notification =
-                    notificationController.notifications[index];
+                final notification = filteredNotifications[index];
                 return _buildGeneralNotificationCard(context, notification);
               },
             ),

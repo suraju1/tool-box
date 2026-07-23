@@ -13,6 +13,7 @@ class LocationController extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   double _radius = 5.0; // Default 5km
+  int _updateTimestamp = 0;
 
   // Default location (Pune, India)
   static const double _defaultLatitude = 18.5204;
@@ -33,6 +34,18 @@ class LocationController extends ChangeNotifier {
       _address = cached['address'];
       _city = cached['city'];
       _label = cached['label'];
+      if (cached['radius'] != null && cached['radius']!.isNotEmpty) {
+        _radius = double.tryParse(cached['radius']!) ?? 10.0;
+      } else if (_address != null && _address!.isNotEmpty) {
+        final savedRad = LocalLocationService.getAddressRadius(_address!.trim());
+        if (savedRad != null && savedRad > 0) {
+          _radius = savedRad;
+        } else {
+          _radius = 10.0;
+        }
+      } else {
+        _radius = 10.0;
+      }
     }
   }
 
@@ -46,6 +59,49 @@ class LocationController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   double get radius => _radius;
   bool get hasLocation => _latitude != null && _longitude != null;
+  int get updateTimestamp => _updateTimestamp;
+
+  String get headerBoldPrefix {
+    final lbl = (_label ?? "LOCATION").toUpperCase();
+    if (lbl == 'OTHER' && _address != null && _address!.contains(' - ')) {
+      final idx = _address!.indexOf(' - ');
+      final customLabel = _address!.substring(0, idx).trim();
+      if (customLabel.isNotEmpty) {
+        return 'OTHER - $customLabel - ';
+      }
+    }
+    return '$lbl - ';
+  }
+
+  String get headerBoldTitle {
+    final lbl = (_label ?? "LOCATION").toUpperCase();
+    if (lbl == 'OTHER' && _address != null && _address!.contains(' - ')) {
+      final idx = _address!.indexOf(' - ');
+      final customLabel = _address!.substring(0, idx).trim();
+      if (customLabel.isNotEmpty) {
+        return 'OTHER - $customLabel';
+      }
+    }
+    return lbl;
+  }
+
+  String get headerAddressText {
+    if (_address == null) return 'NA';
+    final lbl = (_label ?? "LOCATION").toUpperCase();
+    if (lbl == 'OTHER' && _address!.contains(' - ')) {
+      final idx = _address!.indexOf(' - ');
+      final customLabel = _address!.substring(0, idx).trim();
+      if (customLabel.isNotEmpty) {
+        return _address!.substring(idx + 3).trim();
+      }
+    }
+    return _address!;
+  }
+
+  void _markUpdatedAndNotify() {
+    _updateTimestamp = DateTime.now().millisecondsSinceEpoch;
+    notifyListeners();
+  }
 
   /// Initialize with default location values
   void _initializeWithDefaults() {
@@ -54,8 +110,9 @@ class LocationController extends ChangeNotifier {
     _address = _defaultAddress;
     _city = _defaultCity;
     _label = _defaultLabel;
+    _radius = 10.0;
     _persistCurrentLocation();
-    notifyListeners();
+    _markUpdatedAndNotify();
   }
 
   /// Fetch current location with address
@@ -96,20 +153,25 @@ class LocationController extends ChangeNotifier {
         _latitude = locationData['latitude'];
         _longitude = locationData['longitude'];
         _address = locationData['address'];
+        _radius = 10.0;
+        _isLoading = false;
+        _persistCurrentLocation();
+        _markUpdatedAndNotify();
 
         // Extract city name
         if (_latitude != null && _longitude != null) {
-          _city = await LocationService.getCityFromCoordinates(
+          LocationService.getCityFromCoordinates(
             _latitude!,
             _longitude!,
-          );
-
-          // Save to Hive
-          _persistCurrentLocation();
+          ).then((cityName) {
+            if (cityName != null && cityName != _city) {
+              _city = cityName;
+              _persistCurrentLocation();
+              notifyListeners();
+            }
+          });
         }
 
-        _isLoading = false;
-        notifyListeners();
         return true;
       } else {
         debugPrint('Unable to get location. Falling back to defaults.');
@@ -139,7 +201,7 @@ class LocationController extends ChangeNotifier {
     _address = null;
     _city = null;
     _errorMessage = null;
-    notifyListeners();
+    _markUpdatedAndNotify();
   }
 
   /// Set location manually
@@ -148,25 +210,38 @@ class LocationController extends ChangeNotifier {
     _longitude = lng;
     _address = address;
     _label = label;
-    if (radius != null) {
+    if (radius != null && radius > 0) {
       _radius = radius;
+      LocalLocationService.saveAddressRadius(address.trim(), radius);
+    } else {
+      final savedRad = LocalLocationService.getAddressRadius(address.trim());
+      if (savedRad != null && savedRad > 0) {
+        _radius = savedRad;
+      } else {
+        _radius = 10.0;
+      }
     }
+    _persistCurrentLocation();
+    _markUpdatedAndNotify();
 
     // Try to get city from manual address or coordinates
     LocationService.getCityFromCoordinates(lat, lng).then((cityName) {
-      _city = cityName;
-      _persistCurrentLocation();
-      notifyListeners();
+      if (cityName != null && cityName != _city) {
+        _city = cityName;
+        _persistCurrentLocation();
+        notifyListeners();
+      }
     });
-
-    _persistCurrentLocation();
-    notifyListeners();
   }
 
   /// Update radius
   void setRadius(double radius) {
     _radius = radius;
-    notifyListeners();
+    if (_address != null && _address!.isNotEmpty) {
+      LocalLocationService.saveAddressRadius(_address!.trim(), radius);
+    }
+    _persistCurrentLocation();
+    _markUpdatedAndNotify();
   }
 
   void _persistCurrentLocation() {
@@ -176,6 +251,7 @@ class LocationController extends ChangeNotifier {
       'address': _address ?? '',
       'city': _city ?? '',
       'label': _label ?? 'LOCATION',
+      'radius': _radius.toString(),
     });
   }
 
@@ -206,17 +282,32 @@ class LocationController extends ChangeNotifier {
       _longitude = parsedLng;
       _address = address;
       _label = 'HOME';
+      if (address != null && address.isNotEmpty) {
+        final savedRad = LocalLocationService.getAddressRadius(address.trim());
+        if (savedRad != null && savedRad > 0) {
+          _radius = savedRad;
+        } else {
+          _radius = 10.0;
+        }
+      } else {
+        _radius = 10.0;
+      }
+      _persistCurrentLocation();
+      _markUpdatedAndNotify();
 
       // Also try to get city if coordinates are valid
       if (_latitude != null && _longitude != null) {
-        _city = await LocationService.getCityFromCoordinates(
+        LocationService.getCityFromCoordinates(
           _latitude!,
           _longitude!,
-        );
-        _persistCurrentLocation();
+        ).then((cityName) {
+          if (cityName != null && cityName != _city) {
+            _city = cityName;
+            _persistCurrentLocation();
+            notifyListeners();
+          }
+        });
       }
-
-      notifyListeners();
     } catch (e) {
       debugPrint('Error updating location from user data: $e');
     }
@@ -229,19 +320,70 @@ class LocationController extends ChangeNotifier {
       _longitude = addressModel.longitude;
       _address = addressModel.address;
       _label = addressModel.label;
+      double? savedRadius = addressModel.radius;
+      if (addressModel.id != null) {
+        double? idRad = LocalLocationService.getAddressRadius(addressModel.id!.toString());
+        if (savedRadius == null && idRad != null) {
+          savedRadius = idRad;
+        } else if (savedRadius == null && idRad == null) {
+          LocalLocationService.removeAddressRadius(addressModel.address.trim());
+        }
+      } else {
+        savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addressModel.address.trim());
+      }
+      if (savedRadius != null && savedRadius > 0) {
+        _radius = savedRadius;
+      } else {
+        _radius = 10.0;
+      }
+      _persistCurrentLocation();
+      _markUpdatedAndNotify();
 
       // Also try to get city if coordinates are valid
       if (_latitude != null && _longitude != null) {
-        _city = await LocationService.getCityFromCoordinates(
+        LocationService.getCityFromCoordinates(
           _latitude!,
           _longitude!,
-        );
-        _persistCurrentLocation();
+        ).then((cityName) {
+          if (cityName != null && cityName != _city) {
+            _city = cityName;
+            _persistCurrentLocation();
+            notifyListeners();
+          }
+        });
       }
-
-      notifyListeners();
     } catch (e) {
       debugPrint('Error updating location from address model: $e');
+    }
+  }
+
+  /// Handle deletion of an address model; if it was currently active, switch to a fallback
+  Future<void> handleAddressDeleted({
+    required AddressModel deletedAddr,
+    required List<AddressModel> remainingAddresses,
+    required dynamic userProfile,
+  }) async {
+    final bool wasSelected = (_address != null && _address!.trim().toLowerCase() == deletedAddr.address.trim().toLowerCase()) ||
+        (_address != null && (_address!.trim().toLowerCase().contains(deletedAddr.address.trim().toLowerCase()) || deletedAddr.address.trim().toLowerCase().contains(_address!.trim().toLowerCase()))) ||
+        (_latitude != null && _longitude != null && (_latitude! - deletedAddr.latitude).abs() < 0.0001 && (_longitude! - deletedAddr.longitude).abs() < 0.0001);
+    if (!wasSelected) {
+      return;
+    }
+    debugPrint('[LocationController] Active address "${deletedAddr.address}" deleted. Switching to fallback...');
+    if (remainingAddresses.isNotEmpty) {
+      final fallback = remainingAddresses.firstWhere(
+        (a) => a.isDefault == 1,
+        orElse: () => remainingAddresses.first,
+      );
+      await updateFromAddressModel(fallback);
+    } else if (userProfile != null && userProfile.location != null && userProfile.location!.toString().isNotEmpty && userProfile.location != deletedAddr.address) {
+      await updateFromUserData(
+        lat: userProfile.latitude?.toString(),
+        lng: userProfile.longitude?.toString(),
+        address: userProfile.location,
+      );
+    } else {
+      await fetchLocation();
     }
   }
 }

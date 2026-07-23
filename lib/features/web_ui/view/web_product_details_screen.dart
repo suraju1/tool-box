@@ -349,12 +349,15 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
                     scale: _isHoveringImage ? 1.05 : 1.0,
                     duration: const Duration(milliseconds: 400),
                     curve: Curves.easeOutQuart,
-                    child: AppCachedImage(
-                      imageUrl: images[_currentImageIndex],
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      radius: 0,
+                    child: Container(
+                      color: Colors.grey.withOpacity(0.08),
+                      child: AppCachedImage(
+                        imageUrl: images[_currentImageIndex],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        radius: 0,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -456,6 +459,7 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
 
   Widget _buildTradeTypeTag(String tradeType) {
     if (tradeType.isEmpty) return const SizedBox.shrink();
+    if (tradeType.toLowerCase() == 'permanent') return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -1098,18 +1102,14 @@ class _WebProductDetailsScreenState extends State<WebProductDetailsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                border: Border.all(
-                    color: postTypeStr == 'Giving'
-                        ? Colors.grey.shade500
-                        : context.primaryColor),
+                border: Border.all(color: Colors.grey.shade400),
+                color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 postTypeStr,
                 style: TextStyle(
-                  color: postTypeStr == 'Giving'
-                      ? (context.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700)
-                      : context.primaryColor,
+                  color: Colors.grey.shade700,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),

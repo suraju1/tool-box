@@ -129,7 +129,7 @@ class _WebCollectionItemsScreenState extends State<WebCollectionItemsScreen> {
     if (confirm == true && mounted) {
       final response = await context
           .read<ProfileController>()
-          .removeCollectionItem(widget.collection.id, itemId);
+          .removeUserFromCollection(widget.collection.id, itemId);
       if (response.success && mounted) {
         ToastService.showSuccessToast(context, 'Item removed');
         _fetchItems();

@@ -16,6 +16,7 @@ import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/subscription/controller/subscription_controller.dart';
 import 'package:tool_bocs/features/web_ui/view/web_image_picker_dialog.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
+import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/features/web_ui/view/web_price_range_selector.dart';
 import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
@@ -32,6 +33,9 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
   double _diameter = 5;
   bool _isTemporary = true;
   String _selectedCondition = 'New';
+  bool _isOfferingPriceSelected = false;
+  RangeValues _offeringPriceRange = const RangeValues(10, 50000);
+  bool _isOfferingNegotiable = false;
   bool _isPriceSelected = true;
   RangeValues _priceRange = const RangeValues(10, 50000);
   bool _isNegotiable = false;
@@ -98,7 +102,9 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
 
   Future<void> _initLocation() async {
     final locationController = context.read<LocationController>();
-    await locationController.fetchLocation();
+    if (!locationController.hasLocation || locationController.address == null) {
+      await locationController.fetchLocation();
+    }
     _updateLocationFromController();
   }
 
@@ -257,10 +263,10 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                   ),
                 ),
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text(
+                child: Text(
                   'Restore Draft',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -331,70 +337,77 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildAppBar(),
-                  const SizedBox(height: 24),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: const EdgeInsets.all(24),
-                    decoration: _cardDecoration(),
-                    child: _buildLocationSection(),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: const EdgeInsets.all(24),
-                    decoration: _cardDecoration(),
-                    child: _buildItemDetailsSection(),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color:
-                              Theme.of(context).primaryColor.withOpacity(0.2),
-                          width: 1.5),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAppBar(),
+                    const SizedBox(height: 24),
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.all(24),
+                      decoration: _cardDecoration(),
+                      child: _buildLocationSection(),
                     ),
-                    child: _buildReturnSection(),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    padding: const EdgeInsets.all(24),
-                    decoration: _cardDecoration(),
-                    child: Column(
-                      children: [
-                        _buildTradeDetailsSection(),
-                        const SizedBox(height: 24),
-                        Divider(
-                            color: Theme.of(context).dividerColor,
-                            thickness: 1),
-                        const SizedBox(height: 24),
-                        _buildWalletAndNotificationSection(),
-                      ],
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.2),
+                            width: 1.5),
+                      ),
+                      child: _buildItemDetailsSection(),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildPostButton(),
-                  const SizedBox(height: 40),
-                ],
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.2),
+                            width: 1.5),
+                      ),
+                      child: _buildReturnSection(),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.all(24),
+                      decoration: _cardDecoration(),
+                      child: Column(
+                        children: [
+                          _buildTradeDetailsSection(),
+                          const SizedBox(height: 24),
+                          Divider(
+                              color: Theme.of(context).dividerColor,
+                              thickness: 1),
+                          const SizedBox(height: 24),
+                          _buildWalletAndNotificationSection(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildPostButton(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -453,7 +466,9 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '${(context.watch<LocationController>().label ?? "LOCATION").toUpperCase()} - ',
+                          text: context
+                              .watch<LocationController>()
+                              .headerBoldPrefix,
                           style: TextStyle(
                             color: Theme.of(context).textTheme.bodyLarge?.color,
                             fontWeight: FontWeight.bold,
@@ -461,7 +476,12 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
                           ),
                         ),
                         TextSpan(
-                          text: context.watch<LocationController>().address ?? _pickupAddress,
+                          text: context.watch<LocationController>().address !=
+                                  null
+                              ? context
+                                  .watch<LocationController>()
+                                  .headerAddressText
+                              : _pickupAddress,
                           style: TextStyle(
                             color: Theme.of(context).textTheme.bodyLarge?.color,
                             fontSize: 16,
@@ -504,7 +524,6 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
           inactiveColor: Theme.of(context).dividerColor,
           onChanged: (val) {
             setState(() => _diameter = val);
-            context.read<LocationController>().setRadius(val);
           },
         ),
         const SizedBox(height: 8),
@@ -520,28 +539,41 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.tradeDetails,
-            style: _labelStyle(size: 18)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(AppLocalizations.of(context)!.tradeDetails,
+                style: _labelStyle(size: 18)),
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _showTradeTypeInfoDialog(context),
+              child: Container(
+                height: 36,
+                width: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.isDarkMode
+                      ? Colors.white.withOpacity(0.05)
+                      : const Color(0xFFF5F7F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: context.isDarkMode
+                        ? Colors.white24
+                        : Colors.grey.shade300,
+                  ),
+                ),
+                child: Icon(
+                  Icons.info_outline,
+                  color: context.primaryColor,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
         Text(AppLocalizations.of(context)!.tradeType,
             style: TextStyle(color: Colors.grey, fontSize: 14)),
-        const SizedBox(height: 4),
-        const Text(
-          'Temporary: Stays for 48 hours (make it active for free)',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 11,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-        const Text(
-          'Permanent: Permanently stays on account until you remove it',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 11,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
         const SizedBox(height: 8),
         Container(
           height: 45,
@@ -561,6 +593,92 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showTradeTypeInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: context.surfaceColor,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.tradeType,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: context.textColor,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: context.textColor),
+                        splashRadius: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: context.textColor,
+                        height: 1.5,
+                        fontFamily: FontFamily.openSans,
+                      ),
+                      children: const [
+                        TextSpan(
+                          text: 'Temporary: ',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: 'Stays for 48 hours (make it active for free)',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: context.textColor,
+                        height: 1.5,
+                        fontFamily: FontFamily.openSans,
+                      ),
+                      children: const [
+                        TextSpan(
+                          text: 'Permanent: ',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text:
+                              'Permanently stays on account until you remove it',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -657,147 +775,207 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
   }
 
   Widget _buildItemDetailsSection() {
+    final Object? args = ModalRoute.of(context)?.settings.arguments;
+    final bool isTake = args == 'Create Take Post' ||
+        (args is String && args.toLowerCase().contains('take'));
+    final String headingQuestion = isTake
+        ? AppLocalizations.of(context)!.whatAreYouLookingFor
+        : AppLocalizations.of(context)!.whatAreYouOffering;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppLocalizations.of(context)!.itemDetails,
-            style: _labelStyle(size: 20)),
+        Text(headingQuestion, style: _labelStyle(size: 20)),
         const SizedBox(height: 24),
-        Text(AppLocalizations.of(context)!.itemName, style: _labelStyle()),
-        const SizedBox(height: 12),
-        _buildTextField('Enter item name',
-            controller: _itemNameController,
-            validator: (val) => _validateRequired(val, 'Item Name')),
-        const SizedBox(height: 24),
-        _buildAddPhotosSection(),
-        const SizedBox(height: 32),
-        Text(AppLocalizations.of(context)!.category, style: _labelStyle()),
-        const SizedBox(height: 12),
-        _buildCategoryToggleSelection(
-          _selectedCategory,
-          (val) => setState(() => _selectedCategory = val),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5E7EB),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              _buildToggleButton('Price', _isOfferingPriceSelected, () {
+                setState(() => _isOfferingPriceSelected = true);
+              }),
+              _buildToggleButton('Item', !_isOfferingPriceSelected, () {
+                setState(() => _isOfferingPriceSelected = false);
+              }),
+            ],
+          ),
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: _selectedCategory?.name == 'Goods'
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        if (_isOfferingPriceSelected) ...[
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).dividerColor),
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).cardColor,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                WebPriceRangeSelector(
+                  initialValues: _offeringPriceRange,
+                  onChanged: (val) => setState(() => _offeringPriceRange = val),
+                ),
+                const SizedBox(height: 32),
+                Row(
                   children: [
-                    const SizedBox(height: 24),
-                    Text(AppLocalizations.of(context)!.condition,
-                        style: _labelStyle()),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedCondition,
-                      icon: const Icon(Icons.keyboard_arrow_down),
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        filled: true,
-                        fillColor: Theme.of(context).cardColor,
-                      ),
-                      items: ['New', 'Like New', 'Used'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value,
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.color,
-                                  fontWeight: FontWeight.w500)),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedCondition = newValue;
-                          });
-                        }
-                      },
+                    Switch(
+                      value: _isOfferingNegotiable,
+                      activeColor: Colors.green,
+                      onChanged: (val) => setState(() => _isOfferingNegotiable = val),
                     ),
-                    const SizedBox(height: 24),
-                    Text(AppLocalizations.of(context)!.itemSources,
-                        style: _labelStyle()),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _isHomemade
-                          ? 'Homemade'
-                          : (_isStoreBought ? 'Store bought' : null),
-                      hint: Text(AppLocalizations.of(context)!.selectSource,
-                          style: const TextStyle(fontSize: 14)),
-                      icon: const Icon(Icons.keyboard_arrow_down),
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        filled: true,
-                        fillColor: Theme.of(context).cardColor,
-                      ),
-                      items: ['Homemade', 'Store bought'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value,
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.color,
-                                  fontWeight: FontWeight.w500)),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _isHomemade = newValue == 'Homemade';
-                            _isStoreBought = newValue == 'Store bought';
-                          });
-                        }
-                      },
-                    ),
-                    if (_showSourceError)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                            AppLocalizations.of(context)!
-                                .pleaseSelectAtLeastOne,
-                            style: const TextStyle(
-                                color: Colors.red, fontSize: 14)),
-                      ),
+                    const SizedBox(width: 12),
+                    Text(AppLocalizations.of(context)!.negotiable,
+                        style: TextStyle(color: Colors.grey, fontSize: 16)),
                   ],
-                )
-              : const SizedBox.shrink(),
-        ),
-        const SizedBox(height: 24),
-        Text(AppLocalizations.of(context)!.writeANote, style: _labelStyle()),
-        const SizedBox(height: 12),
-        _buildTextField('Describe your product here...',
-            maxLines: 4,
-            controller: _itemNoteController,
-            validator: (val) => _validateRequired(val, 'Note')),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 24),
+          Text(AppLocalizations.of(context)!.itemName, style: _labelStyle()),
+          const SizedBox(height: 12),
+          _buildTextField('Enter item name',
+              controller: _itemNameController,
+              validator: (val) => _validateRequired(val, 'Item Name')),
+          const SizedBox(height: 24),
+          _buildAddPhotosSection(),
+          const SizedBox(height: 32),
+          Text(AppLocalizations.of(context)!.category, style: _labelStyle()),
+          const SizedBox(height: 12),
+          _buildCategoryToggleSelection(
+            _selectedCategory,
+            (val) => setState(() => _selectedCategory = val),
+            hideMoney: true,
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _selectedCategory?.name == 'Goods'
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      Text(AppLocalizations.of(context)!.condition,
+                          style: _labelStyle()),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedCondition,
+                        icon: const Icon(Icons.keyboard_arrow_down),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                BorderSide(color: Theme.of(context).dividerColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                BorderSide(color: Theme.of(context).dividerColor),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).cardColor,
+                        ),
+                        items: ['New', 'Like New', 'Used'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.color,
+                                    fontWeight: FontWeight.w500)),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedCondition = newValue;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      Text(AppLocalizations.of(context)!.itemSources,
+                          style: _labelStyle()),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _isHomemade
+                            ? 'Homemade'
+                            : (_isStoreBought ? 'Store bought' : null),
+                        hint: Text(AppLocalizations.of(context)!.selectSource,
+                            style: const TextStyle(fontSize: 14)),
+                        icon: const Icon(Icons.keyboard_arrow_down),
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                BorderSide(color: Theme.of(context).dividerColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                BorderSide(color: Theme.of(context).dividerColor),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).cardColor,
+                        ),
+                        items: ['Homemade', 'Store bought'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.color,
+                                    fontWeight: FontWeight.w500)),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _isHomemade = newValue == 'Homemade';
+                              _isStoreBought = newValue == 'Store bought';
+                            });
+                          }
+                        },
+                      ),
+                      if (_showSourceError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                              AppLocalizations.of(context)!
+                                  .pleaseSelectAtLeastOne,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 14)),
+                        ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 24),
+          Text(AppLocalizations.of(context)!.writeANote, style: _labelStyle()),
+          const SizedBox(height: 12),
+          _buildTextField('Describe your product here...',
+              maxLines: 4,
+              controller: _itemNoteController,
+              validator: (val) => _validateRequired(val, 'Note')),
+        ],
       ],
     );
   }
@@ -810,10 +988,11 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
             style: _labelStyle(size: 20)),
         const SizedBox(height: 24),
         Container(
-          height: 45,
+          height: 48,
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
+            color: const Color(0xFFE5E7EB),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
@@ -974,6 +1153,7 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
         _buildCategoryToggleSelection(
           _selectedReturnCategory,
           (val) => setState(() => _selectedReturnCategory = val),
+          hideMoney: true,
         ),
         const SizedBox(height: 24),
         Text(AppLocalizations.of(context)!.condition, style: _labelStyle()),
@@ -1259,20 +1439,22 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
       isValid = false;
     }
 
-    if (_selectedCategory == null) {
-      ToastService.showErrorToast(
-          context, 'Please select a category for the item');
-      isValid = false;
-    }
+    if (!_isOfferingPriceSelected) {
+      if (_selectedCategory == null) {
+        ToastService.showErrorToast(
+            context, 'Please select a category for the item');
+        isValid = false;
+      }
 
-    if (_itemImages.isEmpty) {
-      setState(() => _showImageError = true);
-      isValid = false;
-    }
+      if (_itemImages.isEmpty) {
+        setState(() => _showImageError = true);
+        isValid = false;
+      }
 
-    if (!_isHomemade && !_isStoreBought) {
-      setState(() => _showSourceError = true);
-      isValid = false;
+      if (!_isHomemade && !_isStoreBought) {
+        setState(() => _showSourceError = true);
+        isValid = false;
+      }
     }
 
     if (!_isPriceSelected) {
@@ -1320,16 +1502,22 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
       longitude: _longitude!,
       areaDiameter: _diameter,
       tradeType: _isTemporary ? "Temporary" : "Permanent",
-      itemName: _itemNameController.text,
-      itemCategory: _selectedCategory!.name,
-      itemCategoryId: _selectedCategory!.id,
-      itemCondition: _selectedCondition,
+      itemName: _isOfferingPriceSelected
+          ? '₹${_offeringPriceRange.start.toInt()} - ₹${_offeringPriceRange.end.toInt()}'
+          : _itemNameController.text,
+      itemCategory: _isOfferingPriceSelected
+          ? 'Money'
+          : _selectedCategory!.name,
+      itemCategoryId: _isOfferingPriceSelected ? 14 : _selectedCategory!.id,
+      itemCondition: _isOfferingPriceSelected ? 'NA' : _selectedCondition,
       itemNote: _itemNoteController.text,
-      itemSource: _isHomemade ? "Homemade" : "Store bought",
+      itemSource: _isOfferingPriceSelected
+          ? 'NA'
+          : (_isHomemade ? "Homemade" : "Store bought"),
       returnType: _isPriceSelected ? "Price" : "Item",
       priceMin: _isPriceSelected ? _priceRange.start : null,
       priceMax: _isPriceSelected ? _priceRange.end : null,
-      isNegotiable: _isNegotiable,
+      isNegotiable: _isOfferingPriceSelected ? _isOfferingNegotiable : _isNegotiable,
       walletCredits: (double.tryParse(context
                       .read<SubscriptionController>()
                       .mySubscription
@@ -1486,7 +1674,8 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
   }
 
   Widget _buildCategoryToggleSelection(
-      CategoryModel? currentValue, Function(CategoryModel) onSelected) {
+      CategoryModel? currentValue, Function(CategoryModel) onSelected,
+      {bool hideMoney = false}) {
     return Consumer<TradeController>(
       builder: (context, tradeController, child) {
         Widget buildBtn(String label) {
@@ -1537,8 +1726,10 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
             buildBtn('Goods'),
             const SizedBox(width: 16),
             buildBtn('Services'),
-            const SizedBox(width: 16),
-            buildBtn('Money'),
+            if (!hideMoney) ...[
+              const SizedBox(width: 16),
+              buildBtn('Money'),
+            ],
           ],
         );
       },
@@ -1549,18 +1740,27 @@ class _WebCreateGivePostScreenState extends State<WebCreateGivePostScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-              color: isSelected
-                  ? Theme.of(context).primaryColor
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(10)),
+            color: isSelected
+                ? Theme.of(context).primaryColor
+                : Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
           child: Text(
             label,
             style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey,
-                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color,
+                fontWeight: FontWeight.w700,
                 fontSize: 16),
           ),
         ),

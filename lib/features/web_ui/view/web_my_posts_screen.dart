@@ -643,7 +643,7 @@ class _WebMyPostsScreenState extends State<WebMyPostsScreen> {
                   child: imagePath.isNotEmpty
                       ? AppCachedImage(
                           imageUrl: imagePath,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
                           radius: 0,

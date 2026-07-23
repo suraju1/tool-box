@@ -18,6 +18,7 @@ import 'package:tool_bocs/core/controller/theme_controller.dart';
 import 'package:tool_bocs/core/controller/language_controller.dart';
 import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:tool_bocs/core/services/toast_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool isTab;
@@ -598,6 +599,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _confirmClearComment(BuildContext context, int reviewId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.surfaceColor,
+        title: Text('Delete Comment', style: TextStyle(color: context.textColor)),
+        content: Text('Are you sure you want to delete this comment?', style: TextStyle(color: context.textColor)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: TextStyle(color: context.subTextColor)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      final response = await context.read<ProfileController>().clearReviewComment(reviewId);
+      if (response.success && context.mounted) {
+        ToastService.showSuccessToast(context, 'Comment deleted successfully');
+      } else if (context.mounted) {
+        ToastService.showErrorToast(context, response.message ?? 'Failed to delete comment');
+      }
+    }
+  }
+
   Widget _buildMarksOfSurajSection(UserProfileModel profile) {
     final reviews = profile.reviews;
     return Container(
@@ -702,12 +733,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              review.feedbackLabel ?? "Review",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14.sp,
-                                  color: context.textColor),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    review.feedbackLabel ?? "Review",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14.sp,
+                                        color: context.textColor),
+                                  ),
+                                ),
+                                if (review.comment?.isNotEmpty == true)
+                                  InkWell(
+                                    onTap: () => _confirmClearComment(context, review.id),
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                      child: Icon(Icons.delete_outline,
+                                          color: Colors.red.withOpacity(0.85), size: 18.sp),
+                                    ),
+                                  ),
+                              ],
                             ),
                             SizedBox(height: 2.h),
                             Text(

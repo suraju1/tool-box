@@ -454,7 +454,7 @@ class TradeService {
     try {
       final response = await _apiClient.post(
         ApiConstants.completeTrade.replaceAll('{{id}}', responseId.toString()),
-        data: {'amount': 5},
+        data: {'amount': 20},
       );
 
       if (response.statusCode == 200) {

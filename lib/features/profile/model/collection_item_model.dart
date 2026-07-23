@@ -6,6 +6,7 @@ class CollectionItemModel {
   final String fullName;
   final String? profileImage;
   final String? location;
+  final String? fcmToken;
 
   CollectionItemModel({
     required this.id,
@@ -15,17 +16,19 @@ class CollectionItemModel {
     required this.fullName,
     this.profileImage,
     this.location,
+    this.fcmToken,
   });
 
   factory CollectionItemModel.fromJson(Map<String, dynamic> json) {
     return CollectionItemModel(
       id: json['id'] ?? 0,
-      itemType: json['item_type'] ?? '',
-      itemId: json['item_id'] ?? 0,
-      createdAt: json['created_at'] ?? '',
+      itemType: json['item_type'] ?? 'profile',
+      itemId: json['item_id'] ?? json['id'] ?? 0,
+      createdAt: json['added_at'] ?? json['created_at'] ?? '',
       fullName: json['full_name'] ?? '',
       profileImage: json['profile_image'],
       location: json['location'],
+      fcmToken: json['fcm_token'],
     );
   }
 
@@ -35,9 +38,11 @@ class CollectionItemModel {
       'item_type': itemType,
       'item_id': itemId,
       'created_at': createdAt,
+      'added_at': createdAt,
       'full_name': fullName,
       'profile_image': profileImage,
       'location': location,
+      'fcm_token': fcmToken,
     };
   }
 }

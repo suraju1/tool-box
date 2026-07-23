@@ -181,37 +181,24 @@ class _ChoosePlanScreenState extends State<ChoosePlanScreen> {
   void _onSubscribe(BuildContext context, AvailablePlan plan) async {
     _activePlanId = plan.id;
     final controller = context.read<SubscriptionController>();
-    final orderResponse = await controller.createOrder(plan.id);
+    
+    // TEMPORARY BYPASS for testing: Skip createOrder and Razorpay, just activate directly
+    // final orderResponse = await controller.createOrder(plan.id);
+    final success = await controller.activateSubscription(plan.id);
 
     if (context.mounted) {
-      if (orderResponse != null && orderResponse.success && orderResponse.orderId != null) {
-        var options = {
-          'key': 'rzp_test_T1ASSkvu0ktQw8',
-          'amount': orderResponse.amount > 0
-              ? orderResponse.amount
-              : (double.tryParse(plan.price) ?? 0) * 100,
-          'name': 'Toolucs',
-          'description': plan.name,
-          'order_id': orderResponse.orderId,
-          'prefill': {
-            'contact': '',
-            'email': '',
-          },
-          'theme': {
-            'color': '#45C0C7'
-          }
-        };
-
-        try {
-          _razorpay.open(options);
-        } catch (e) {
-          debugPrint('Error opening Razorpay checkout: $e');
-          controller.cancelActivation();
-        }
-      } else if (controller.errorMessage != null) {
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(controller.errorMessage!),
+            content: Text(controller.successMessage ?? 'Subscription activated successfully (Bypassed Payment)'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacementNamed(context, AppRoutes.mySubscription);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(controller.errorMessage ?? 'Failed to activate subscription'),
             backgroundColor: Colors.red,
           ),
         );

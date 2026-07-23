@@ -538,6 +538,8 @@ class _TradeDetailsScreenState extends State<TradeDetailsScreen> {
 
     return Consumer<TradeController>(
       builder: (context, tradeController, _) {
+        final currentMark = tradeController.getUserMark(response.id) ?? _submittedMark ?? response.userMark?.toLowerCase();
+        
         return Container(
           margin: EdgeInsets.only(top: 10.h),
           padding: EdgeInsets.all(12.w),
@@ -554,7 +556,7 @@ class _TradeDetailsScreenState extends State<TradeDetailsScreen> {
                   label: AppLocalizations.of(context)!.like,
                   icon: Icons.thumb_up_alt_outlined,
                   color: Colors.green,
-                  isSelected: (tradeController.getUserMark(response.id) ?? _submittedMark) == 'like',
+                  isSelected: currentMark == 'like',
                   isLoading: tradeController.isMarkingUser,
                   onTap: () => _submitUserMark(response, partnerId, 'like'),
                 ),
@@ -565,7 +567,7 @@ class _TradeDetailsScreenState extends State<TradeDetailsScreen> {
                   label: AppLocalizations.of(context)!.dislike,
                   icon: Icons.thumb_down_alt_outlined,
                   color: Colors.red,
-                  isSelected: (tradeController.getUserMark(response.id) ?? _submittedMark) == 'dislike',
+                  isSelected: currentMark == 'dislike',
                   isLoading: tradeController.isMarkingUser,
                   onTap: () => _submitUserMark(response, partnerId, 'dislike'),
                 ),

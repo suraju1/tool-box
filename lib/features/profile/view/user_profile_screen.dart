@@ -603,7 +603,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Reviews & Ratings',
+                'Marks of ${profile.userDetails.fullName.trim().split(' ').first}',
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.bold,

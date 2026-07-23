@@ -54,11 +54,11 @@ class ToastService {
 
     _currentEntry = OverlayEntry(
       builder: (context) => Positioned(
-        top: 50,
+        bottom: 80,
         left: 0,
         right: 0,
         child: Align(
-          alignment: Alignment.topCenter,
+          alignment: Alignment.bottomCenter,
           child: Material(
             color: Colors.transparent,
             child: TweenAnimationBuilder<double>(
@@ -68,7 +68,7 @@ class ToastService {
                 return Opacity(
                   opacity: value,
                   child: Transform.translate(
-                    offset: Offset(0, (1 - value) * -20),
+                    offset: Offset(0, (1 - value) * 20),
                     child: child,
                   ),
                 );

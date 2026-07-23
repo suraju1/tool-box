@@ -62,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
       tradeController.setLocation(
         locationController.latitude,
         locationController.longitude,
+        radius: locationController.radius,
       );
 
       tradeController.fetchHomePosts();
@@ -99,15 +100,16 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Consumer<TradeController>(
               builder: (context, controller, child) {
-                // Proactively sync location from LocationController if it exists but is missing in TradeSontroller
+                // Proactively sync location from LocationController if missing in TradeController
                 final locationController = context.read<LocationController>();
                 if (locationController.hasLocation && !controller.hasLocation) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    controller.setLocation(
+                    controller.updateLocationAndFetchIfNeeded(
                       locationController.latitude,
                       locationController.longitude,
+                      locationController.updateTimestamp,
+                      radius: locationController.radius,
                     );
-                    controller.fetchHomePosts(refresh: true);
                   });
                 }
 
@@ -292,13 +294,6 @@ class _HomeScreenState extends State<HomeScreen> {
               return InkWell(
                 onTap: () async {
                   await LocationSelectionSheet.show(context);
-                  if (mounted) {
-                    context.read<TradeController>().setLocation(
-                          locationController.latitude,
-                          locationController.longitude,
-                        );
-                    context.read<TradeController>().fetchHomePosts();
-                  }
                 },
                 child: Row(
                   children: [
@@ -315,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: '${(locationController.label ?? "LOCATION").toUpperCase()} - ',
+                              text: locationController.headerBoldPrefix,
                               style: TextStyle(
                                 color: context.textColor,
                                 fontWeight: FontWeight.w800,
@@ -323,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             TextSpan(
-                              text: '${locationController.address ?? 'NA'}',
+                              text: locationController.headerAddressText,
                               style: TextStyle(
                                 color: context.textColor,
                                 fontWeight: FontWeight.normal,
@@ -372,19 +367,24 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Slider(
-                      padding: EdgeInsets.zero,
-                      value: controller.distanceKm.clamp(0.01, 10.0),
-                      min: 0.01,
-                      max: 10.0,
+                    child: Builder(
+                      builder: (context) {
+                        double maxLim = controller.maxDistanceKm > 0.01 ? controller.maxDistanceKm : 10.0;
+                        return Slider(
+                          padding: EdgeInsets.zero,
+                          value: controller.distanceKm.clamp(0.01, maxLim),
+                          min: 0.01,
+                          max: maxLim,
                       activeColor: context.primaryColor,
                       inactiveColor: Colors.grey.shade200,
                       thumbColor: context.primaryColor,
-                      onChanged: (val) {
-                        controller.setDistance(
-                          val,
-                          triggerFetch: true,
-                          fetchType: 'all',
+                          onChanged: (val) {
+                            controller.setDistance(
+                              val,
+                              triggerFetch: true,
+                              fetchType: 'all',
+                            );
+                          },
                         );
                       },
                     ),
@@ -596,16 +596,16 @@ class _HomeScreenState extends State<HomeScreen> {
             AspectRatio(
               aspectRatio: 14 / 9,
               child: Container(
-                color: Colors.blue.withOpacity(
-                  0.1,
-                ), // Fixed withValues to withOpacity for compatibility if needed, or keeping withValues if on new Flutter
+                color: context.isDarkMode
+                    ? Colors.black26
+                    : Colors.grey.withOpacity(0.08),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     imagePath.isNotEmpty
                         ? AppCachedImage(
                             imageUrl: imagePath,
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                             width: 1.sw - 44.w,
                             height: (1.sw - 44.w) * 9 / 14,
                             radius: 0,

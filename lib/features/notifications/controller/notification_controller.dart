@@ -26,10 +26,11 @@ class NotificationController extends ChangeNotifier {
 
   int _currentPage = 1;
 
-  Future<void> fetchNotifications({bool isRefresh = false}) async {
+  Future<void> fetchNotifications({bool isRefresh = false, String type = 'general'}) async {
     if (isRefresh) {
       _currentPage = 1;
       _notifications = [];
+      _currentType = type;
     }
 
     if (_currentPage == 1) {
@@ -43,6 +44,7 @@ class NotificationController extends ChangeNotifier {
     final response = await _service.fetchNotifications(
       page: _currentPage,
       limit: 10,
+      type: type,
     );
 
     if (response.success && response.data != null) {
@@ -79,8 +81,7 @@ class NotificationController extends ChangeNotifier {
   Future<void> markAllAsRead() async {
     final response = await _service.markAllAsRead();
     if (response.success) {
-      // Re-fetch to be sure or just update local
-      fetchNotifications(isRefresh: true);
+      fetchNotifications(isRefresh: true, type: _currentType);
       _unreadCount = 0;
       notifyListeners();
     }
@@ -90,7 +91,7 @@ class NotificationController extends ChangeNotifier {
     debugPrint("Marking notification as read, ID: $notificationId");
     final response = await _service.markAsRead(notificationId);
     if (response.success) {
-      fetchNotifications(isRefresh: true);
+      fetchNotifications(isRefresh: true, type: _currentType);
     }
   }
 
@@ -101,14 +102,16 @@ class NotificationController extends ChangeNotifier {
       _notifications.removeWhere((n) => n.id == notificationId);
       _unreadCount = (_unreadCount > 0) ? _unreadCount - 1 : 0;
       notifyListeners();
-      fetchNotifications(isRefresh: true);
+      fetchNotifications(isRefresh: true, type: _currentType);
     }
   }
 
+  String _currentType = 'general';
+
   bool get hasMore => _pagination?.hasNext ?? false;
 
-  Future<void> loadMore() async {
+  Future<void> loadMore({String type = 'general'}) async {
     if (!hasMore || _isPaginationLoading) return;
-    await fetchNotifications();
+    await fetchNotifications(type: _currentType);
   }
 }

@@ -1213,7 +1213,10 @@ class _TradeOfferScreenState extends State<TradeOfferScreen> {
               style: TextStyle(color: context.subTextColor, fontSize: 13.sp)),
           isExpanded: true,
           value: _selectedCategory,
-          items: tradeController.categories.map((category) {
+          items: tradeController.categories
+              .where((category) =>
+                  category.name.toLowerCase() != 'money' && category.id != 14)
+              .map((category) {
             return DropdownMenuItem<CategoryModel>(
               value: category,
               child: Text(

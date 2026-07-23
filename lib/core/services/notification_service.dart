@@ -67,8 +67,21 @@ class NotificationService {
     }
   }
 
-  void handleNotificationPayload(String payload) {
-    debugPrint("Handling notification payload: $payload");
+  void handleNotificationPayload(String payload, {int retryCount = 0}) {
+    debugPrint("Handling notification payload: $payload (retry: $retryCount)");
+    if (navigatorKey.currentState == null) {
+      if (retryCount < 10) {
+        debugPrint("[NotificationService] Navigator not ready, queueing retry for: $payload");
+        Future.delayed(const Duration(milliseconds: 500), () {
+          handleNotificationPayload(payload, retryCount: retryCount + 1);
+        });
+        return;
+      } else {
+        debugPrint("[NotificationService] Navigator still null after 10 retries. Aborting navigation.");
+        return;
+      }
+    }
+
     try {
       // 1. Try to parse as JSON (FCM style)
       try {

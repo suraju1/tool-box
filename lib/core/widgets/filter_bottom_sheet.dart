@@ -22,7 +22,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       final controller = context.read<TradeController>();
       controller.fetchCategories();
       setState(() {
-        distance = controller.distanceKm.clamp(0.01, 10.0);
+        double maxLim = controller.maxDistanceKm > 0.01 ? controller.maxDistanceKm : 10.0;
+        distance = controller.distanceKm.clamp(0.01, maxLim);
         selectedCategories = List.from(controller.selectedCategories);
         selectedRating = controller.selectedRating;
         returnType = controller.selectedReturnType;
@@ -205,6 +206,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildDistanceSection() {
+    final controller = context.read<TradeController>();
+    double maxLim = controller.maxDistanceKm > 0.01 ? controller.maxDistanceKm : 10.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,9 +219,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             Expanded(
               child: Slider(
                 padding: EdgeInsets.zero,
-                value: distance,
+                value: distance.clamp(0.01, maxLim),
                 min: 0.01,
-                max: 10.0,
+                max: maxLim,
                 activeColor: context.primaryColor,
                 inactiveColor:
                     context.isDarkMode ? Colors.white12 : Colors.grey.shade200,

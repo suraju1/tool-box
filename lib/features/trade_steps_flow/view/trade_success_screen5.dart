@@ -8,6 +8,8 @@ import 'package:tool_bocs/core/widgets/user_review_dialog.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
+import 'package:tool_bocs/features/chat/view/chat_screen.dart';
+import 'package:tool_bocs/l10n/generated/app_localizations.dart';
 
 class TradeSuccessScreen extends StatefulWidget {
   const TradeSuccessScreen({super.key});
@@ -50,13 +52,18 @@ class _TradeSuccessScreenState extends State<TradeSuccessScreen> {
   Widget build(BuildContext context) {
     final tradeController = context.watch<TradeController>();
     final subscriptionController = context.watch<SubscriptionController>();
+    final authController = context.watch<AuthController>();
     final response = tradeController.selectedResponse;
+    final isOwner = authController.currentUser?.id == response?.posterUserId;
     final posterName = response?.posterName ?? 'the owner';
+    final otherUserId = isOwner ? response?.responderId : response?.posterUserId;
+    final otherUserName =
+        isOwner ? response?.responderName : (response?.posterName ?? 'User');
+    final otherUserImage =
+        isOwner ? response?.responderImage : response?.posterImage;
 
     final creditFee =
-        subscriptionController.mySubscription?.postPrice.split('.').first ??
-            tradeController.lastTradeCompletion?.amount.toString() ??
-            '5';
+        tradeController.lastTradeCompletion?.amount.toString() ?? '20';
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -127,15 +134,34 @@ class _TradeSuccessScreenState extends State<TradeSuccessScreen> {
               SizedBox(height: 48.h),
               _buildActionButton(
                 context,
-                label: 'View Trade Details',
-                onPressed: () => Navigator.pushReplacementNamed(
-                    context, AppRoutes.tradeDetails),
+                label: response != null
+                    ? AppLocalizations.of(context)!
+                        .chatWith(otherUserName ?? 'User')
+                    : AppLocalizations.of(context)!.chat,
+                icon: Icons.chat_bubble_outline,
+                onPressed: () {
+                  if (response != null && otherUserId != null) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          otherUserId: otherUserId.toString(),
+                          otherUserName: otherUserName ?? 'User',
+                          otherUserImage: otherUserImage,
+                          tradeResponse: response,
+                        ),
+                      ),
+                    );
+                  } else {
+                    Navigator.pushReplacementNamed(context, AppRoutes.chat);
+                  }
+                },
                 isPrimary: true,
               ),
               SizedBox(height: 12.h),
               _buildActionButton(
                 context,
-                label: 'Go to Home',
+                label: AppLocalizations.of(context)!.goToHome,
                 onPressed: () => Navigator.pushNamedAndRemoveUntil(
                     context, AppRoutes.bottomNavBar, (route) => false),
                 isPrimary: false,
@@ -149,8 +175,10 @@ class _TradeSuccessScreenState extends State<TradeSuccessScreen> {
 
   Widget _buildActionButton(BuildContext context,
       {required String label,
+      IconData? icon,
       required VoidCallback onPressed,
       required bool isPrimary}) {
+    final color = isPrimary ? context.onPrimaryColor : context.primaryColor;
     return SizedBox(
       width: double.infinity,
       height: 54.h,
@@ -166,14 +194,30 @@ class _TradeSuccessScreenState extends State<TradeSuccessScreen> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           elevation: 0,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isPrimary ? Colors.white : context.primaryColor,
-            fontWeight: FontWeight.w700,
-            fontSize: 16.sp,
-          ),
-        ),
+        child: icon != null
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: color, size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16.sp,
+                ),
+              ),
       ),
     );
   }

@@ -16,7 +16,9 @@ import 'package:tool_bocs/features/chat/view/chat_screen.dart';
 import 'package:tool_bocs/core/controller/location_controller.dart';
 import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/notifications/controller/notification_controller.dart';
+import 'package:tool_bocs/core/api/api_constants.dart';
 import 'package:tool_bocs/features/notifications/model/notification_model.dart';
+import 'package:tool_bocs/features/profile/service/profile_service.dart';
 import 'package:intl/intl.dart';
 import 'package:tool_bocs/util/date_util.dart';
 import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
@@ -54,6 +56,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         notificationController.fetchNotifications(isRefresh: true);
       }
     });
+  }
+
+  Future<void> _refreshMatches() async {
+    final tradeController = context.read<TradeController>();
+    if (widget.postId != null) {
+      await tradeController.fetchPostResponses(widget.postId!);
+    } else {
+      await tradeController.fetchAllPostResponses();
+      await tradeController.fetchSentResponses();
+    }
   }
 
   void _navigateToChat(TradeResponseModel response) {
@@ -153,38 +165,69 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             response.status == 'meeting_set' ||
             response.status == 'paid' ||
             response.status == 'completed') {
+          bool isPaid = response.paymentStatus == 'paid' ||
+              response.status == 'paid' ||
+              response.status == 'completed';
+
+          if (isPaid) {
+            _navigateToChat(response);
+            return;
+          }
+
           final authController = context.read<AuthController>();
           final isOwner =
               authController.currentUser?.id == response.posterUserId;
 
           if (isOwner) {
-            if (response.status == 'completed' ||
-                response.status == 'accepted' ||
-                response.status == 'meeting_set') {
-              Navigator.pushNamed(context, AppRoutes.tradeDetails,
-                  arguments: response.id);
-            } else if (response.paymentStatus == 'paid' ||
-                response.status == 'paid') {
-              _navigateToChat(response);
-            } else {
-              ToastService.showErrorToast(
-                context,
-                'Waiting for partner response',
-              );
-            }
+            Navigator.pushNamed(context, AppRoutes.tradeDetails,
+                arguments: response.id);
           } else {
-            if (response.status == 'completed') {
-              Navigator.pushNamed(context, AppRoutes.tradeDetails,
-                  arguments: response.id);
-            } else {
-              Navigator.pushNamed(context, AppRoutes.tradeCompletion);
-            }
+            Navigator.pushNamed(context, AppRoutes.tradeCompletion);
           }
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading overlay
+        ToastService.showErrorToast(context, e.toString());
+      }
+    }
+  }
+
+  Future<void> _rejectTrade(
+      BuildContext context, TradeResponseModel response) async {
+    final controller = context.read<TradeController>();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final success = await controller.updateResponseStatus(
+        responseId: response.id,
+        status: 'rejected',
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        if (success) {
+          ToastService.showSuccessToast(context, 'Offer Rejected');
+          if (widget.postId != null) {
+            controller.fetchPostResponses(widget.postId!);
+          } else {
+            context.read<NotificationController>().fetchNotifications();
+          }
+        } else {
+          ToastService.showErrorToast(
+            context,
+            controller.errorMessage ?? 'Action failed',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
         ToastService.showErrorToast(context, e.toString());
       }
     }
@@ -312,10 +355,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final List<Map<String, dynamic>> allMatches = [];
 
     for (var r in incomingResponses) {
-      allMatches.add({'response': r, 'isIncoming': true});
+      if (r.status?.toLowerCase() != 'rejected' && r.status?.toLowerCase() != 'deleted') {
+        allMatches.add({'response': r, 'isIncoming': true});
+      }
     }
     for (var r in outgoingResponses) {
-      allMatches.add({'response': r, 'isIncoming': false});
+      if (r.status?.toLowerCase() != 'rejected' && r.status?.toLowerCase() != 'deleted') {
+        allMatches.add({'response': r, 'isIncoming': false});
+      }
     }
 
     // Sort all matches by date (newest first)
@@ -332,38 +379,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
 
     if (allMatches.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.all(40.w),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.shopping_bag_outlined,
-                  size: 64.sp, color: context.subTextColor),
-              SizedBox(height: 16.h),
-              Text(
-                'No matches yet',
-                style: TextStyle(
-                  color: context.subTextColor,
-                  fontSize: 16.sp,
-                  fontFamily: FontFamily.openSans,
-                ),
+      return RefreshIndicator(
+        onRefresh: _refreshMatches,
+        color: context.primaryColor,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.6,
+            alignment: Alignment.center,
+            child: Padding(
+              padding: EdgeInsets.all(40.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shopping_bag_outlined,
+                      size: 64.sp, color: context.subTextColor),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'No matches yet',
+                    style: TextStyle(
+                      color: context.subTextColor,
+                      fontSize: 16.sp,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: 20.h),
-      itemCount: allMatches.length,
-      itemBuilder: (context, index) {
-        final matchData = allMatches[index];
-        final response = matchData['response'] as TradeResponseModel;
-        final isIncoming = matchData['isIncoming'] as bool;
-        return _buildResponseCard(context, response, isIncoming);
-      },
+    return RefreshIndicator(
+      onRefresh: _refreshMatches,
+      color: context.primaryColor,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(vertical: 20.h),
+        itemCount: allMatches.length,
+        itemBuilder: (context, index) {
+          final matchData = allMatches[index];
+          final response = matchData['response'] as TradeResponseModel;
+          final isIncoming = matchData['isIncoming'] as bool;
+          return _buildResponseCard(context, response, isIncoming);
+        },
+      ),
     );
   }
 
@@ -392,15 +453,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     }
 
-    print('--- Mobile _buildResponseCard: id = ${response.id}, responderName = ${response.responderName}, distanceKm = ${response.distanceKm}, distanceStr = "$distanceStr"');
+    print(
+        '--- Mobile _buildResponseCard: id = ${response.id}, responderName = ${response.responderName}, distanceKm = ${response.distanceKm}, distanceStr = "$distanceStr"');
 
     if (isIncoming) {
       final postItem = response.postItemName ?? 'item';
       messageSpans = [
         TextSpan(
-            text: _firstName(response.responderName),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        const TextSpan(text: ' is\nTaking your '),
+            text: '${_firstName(response.responderName)} is\nTaking your '),
         TextSpan(
             text: postItem,
             style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -424,16 +484,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ? 'Giving you ₹$startPrice in return'
             : 'Giving you ₹$startPrice - ₹$endPrice in return';
       } else {
-        subText =
-            '(Category: ${response.itemCategory ?? 'Unknown'} | Condition: ${response.itemCondition ?? 'Unknown'})';
+        subText = 'Giving nothing in return';
       }
     } else {
       final postItem = response.postItemName ?? 'item';
+      final currentUserName = context.read<AuthController>().currentUser?.fullName;
+      String otherUserName = response.posterName ?? 'User';
+      if (currentUserName != null && 
+          _firstName(response.posterName).toLowerCase() == _firstName(currentUserName).toLowerCase()) {
+        otherUserName = response.responderName;
+      }
+
       messageSpans = [
-        TextSpan(
-            text: _firstName(response.posterName),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        const TextSpan(text: ' is\nGiving you '),
+        TextSpan(text: '${_firstName(otherUserName)} is\nGiving you '),
         TextSpan(
             text: postItem,
             style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -453,20 +516,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       } else {
         subText = 'Taking an offer in return';
       }
-    }
-
-    if (response.status == 'pending') {
-      actionLabel = isIncoming ? 'Review' : 'Waiting';
-      actionColor = context.primaryColor;
-    } else if (response.status == 'accepted') {
-      actionLabel = 'Continue';
-      actionColor = Colors.green;
-    } else if (response.status == 'rejected') {
-      actionLabel = 'Rejected';
-      actionColor = Colors.red;
-    } else {
-      actionLabel = 'Details';
-      actionColor = Colors.blue;
     }
 
     // Use response item image if available, else post image
@@ -492,24 +541,100 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       distance: distanceStr,
       message: messageSpans,
       subMessageWidget: subMessageWidget,
-      actions: [
-        _buildActionButton(actionLabel, actionColor, context.onPrimaryColor,
-            () => _onResponseTap(response)),
-        if (response.status == 'completed') ...[
-          SizedBox(width: 8.w),
-          _buildActionButton(' Chat ', context.primaryColor,
-              context.onPrimaryColor, () => _navigateToChat(response)),
-        ],
-        const Spacer(),
-        Text(
-          timeAgo,
-          style: TextStyle(
-            fontSize: 10.sp,
-            color: context.subTextColor,
-            fontFamily: FontFamily.openSans,
-          ),
-        ),
-      ],
+      actions: response.status == 'pending'
+          ? (isIncoming
+              ? [
+                  _buildActionButton(
+                      'Accept',
+                      context.isDarkMode ? Colors.grey.shade800 : Colors.black,
+                      Colors.white,
+                      () => _onResponseTap(response)),
+                  SizedBox(width: 8.w),
+                  _buildActionButton(
+                      'Reject',
+                      Colors.grey,
+                      Colors.white,
+                      () => _rejectTrade(context, response)),
+                  const Spacer(),
+                  Text(
+                    timeAgo,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: context.subTextColor,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                  ),
+                ]
+              : [
+                  _buildActionButton(
+                      'Waiting',
+                      context.primaryColor,
+                      context.onPrimaryColor,
+                      () => _onResponseTap(response)),
+                  const Spacer(),
+                  Text(
+                    timeAgo,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: context.subTextColor,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                  ),
+                ])
+          : (response.status == 'rejected' || response.status == 'cancelled'
+              ? [
+                  Text(
+                    response.status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    timeAgo,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: context.subTextColor,
+                      fontFamily: FontFamily.openSans,
+                    ),
+                  ),
+                ]
+              : ((response.paymentStatus == 'paid' || response.status == 'paid' || response.status == 'completed')
+                  ? [
+                      _buildActionButton(
+                          'Chat',
+                          context.isDarkMode ? Colors.grey.shade800 : Colors.black,
+                          Colors.white,
+                          () => _navigateToChat(response)),
+                      const Spacer(),
+                      Text(
+                        timeAgo,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: context.subTextColor,
+                          fontFamily: FontFamily.openSans,
+                        ),
+                      ),
+                    ]
+                  : [
+                      _buildActionButton(
+                          isIncoming ? 'Waiting' : 'Complete Trade',
+                          context.primaryColor,
+                          context.onPrimaryColor,
+                          () => _onResponseTap(response)),
+                      const Spacer(),
+                      Text(
+                        timeAgo,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: context.subTextColor,
+                          fontFamily: FontFamily.openSans,
+                        ),
+                      ),
+                    ])),
       onTap: () => _onResponseTap(response),
     );
   }
@@ -552,8 +677,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
         SizedBox(height: 12.h),
-        ...history.map(
-            (response) => _buildResponseCard(context, response, isIncoming)),
+        ...history
+            .where((response) =>
+                response.status != 'pending' &&
+                response.status != 'accepted' &&
+                response.status != 'rejected')
+            .map((response) =>
+                _buildResponseCard(context, response, isIncoming)),
       ],
     );
   }
@@ -582,14 +712,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12.r),
           ),
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           surfaceTintColor: Colors.transparent,
 
           // ✅ Updated Detail / Info Icon
           icon: Container(
             padding: EdgeInsets.all(6.r),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.isDarkMode ? Colors.white10 : Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -602,7 +732,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Icon(
               Icons.info_outline,
               size: 18.sp,
-              color: Colors.black87,
+              color: context.textColor,
             ),
           ),
 
@@ -621,7 +751,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       AppLocalizations.of(context)!.seeWhatPeopleWantAround,
                       style: TextStyle(
-                        color: const Color(0xFF111311),
+                        color: context.textColor,
                         fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         fontFamily: FontFamily.openSans,
@@ -631,7 +761,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       AppLocalizations.of(context)!.seeExistingPostsByGivers,
                       style: TextStyle(
-                        color: Colors.grey.shade700,
+                        color: context.subTextColor,
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w500,
                         fontFamily: FontFamily.openSans,
@@ -641,7 +771,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       AppLocalizations.of(context)!.respondToPostsMentionWhat2,
                       style: TextStyle(
-                        color: Colors.grey.shade700,
+                        color: context.subTextColor,
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w500,
                         fontFamily: FontFamily.openSans,
@@ -667,13 +797,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   Icon(
                     Icons.help_outline,
                     size: 18.sp,
-                    color: context.primaryColor,
+                    color: context.textColor,
                   ),
                   SizedBox(width: 8.w),
                   Text(
                     AppLocalizations.of(context)!.helpSupport,
                     style: TextStyle(
-                      color: context.primaryColor,
+                      color: context.textColor,
                       fontSize: 13.sp,
                       fontWeight: FontWeight.bold,
                       fontFamily: FontFamily.openSans,
@@ -856,6 +986,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildActionButton(
       String label, Color bgColor, Color textColor, VoidCallback onTap) {
+    final effectiveTextColor =
+        (bgColor == context.primaryColor && textColor == Colors.white)
+            ? context.onPrimaryColor
+            : textColor;
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -867,7 +1001,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: textColor,
+            color: effectiveTextColor,
             fontSize: 12.sp,
             fontWeight: FontWeight.w600,
             fontFamily: FontFamily.openSans,
@@ -879,12 +1013,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildGeneralNotificationsView(BuildContext context) {
     final notificationController = context.watch<NotificationController>();
+    final tradeController = context.watch<TradeController>();
+    final activePostIds = <int>{
+      ...tradeController.sentResponses
+          .where((r) =>
+              r.status?.toLowerCase() != 'rejected' &&
+              r.status?.toLowerCase() != 'deleted')
+          .map((r) => r.postId),
+      ...tradeController.postResponses
+          .where((r) =>
+              r.status?.toLowerCase() != 'rejected' &&
+              r.status?.toLowerCase() != 'deleted')
+          .map((r) => r.postId),
+    };
+
+    final filteredNotifications = notificationController.notifications.where((n) {
+      if (n.notificationTitle.toLowerCase().contains("new post nearby") &&
+          n.referenceId != null) {
+        if (activePostIds.contains(n.referenceId)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
 
     if (notificationController.isLoading) {
       return _buildShimmer(context);
     }
 
-    if (notificationController.notifications.isEmpty) {
+    if (filteredNotifications.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -910,7 +1067,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           notificationController.fetchNotifications(isRefresh: true),
       child: Column(
         children: [
-          if (notificationController.notifications.isNotEmpty)
+          if (filteredNotifications.isNotEmpty)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 8.h),
               child: Row(
@@ -935,17 +1092,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.only(bottom: 20.h),
-              itemCount: notificationController.notifications.length +
+              itemCount: filteredNotifications.length +
                   (notificationController.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index == notificationController.notifications.length) {
+                if (index == filteredNotifications.length) {
                   notificationController.loadMore();
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final notification =
-                    notificationController.notifications[index];
-                return _buildGeneralNotificationCard(context, notification);
+                final notification = filteredNotifications[index];
+                return _AnimatedNotificationItem(
+                  key: ValueKey(notification.id),
+                  notification: notification,
+                  builder: (context, triggerRemove) {
+                    return _buildGeneralNotificationCard(
+                      context,
+                      notification,
+                      onIgnore: triggerRemove,
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -954,10 +1120,270 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  Widget _buildNewPostNearbyCard(
+      BuildContext context, NotificationModel notification, bool isUnread,
+      {VoidCallback? onIgnore}) {
+    final notificationController = context.read<NotificationController>();
+
+    // Formatting the distance
+    String distanceStr = '';
+    if (notification.distanceKm != null &&
+        notification.distanceKm!.isNotEmpty) {
+      final double? dist = double.tryParse(notification.distanceKm!);
+      if (dist != null) {
+        if (dist < 1.0) {
+          distanceStr = '~ ${(dist * 1000).toInt()} mtrs away';
+        } else {
+          distanceStr = '~ ${dist.toStringAsFixed(1)} km away';
+        }
+      }
+    }
+
+    final postType =
+        notification.postType?.toLowerCase() == 'give' ? 'Giving' : 'Taking';
+    final itemName = notification.itemName ?? 'Unknown Item';
+
+    final imageUrl =
+        notification.itemImages.isNotEmpty ? notification.itemImages.first : '';
+    final timeAgo =
+        DateUtil.formatTimeAgo(notification.createdAt?.toIso8601String() ?? '');
+    final actionButtonText = postType == 'Giving' ? 'Take' : 'Give';
+
+    return _buildNewPostNotificationCard(
+      context,
+      imageUrl: imageUrl,
+      distance: distanceStr,
+      message: [
+        TextSpan(
+          text: notification.notificationTitle,
+          style: TextStyle(
+            fontWeight: isUnread ? FontWeight.w800 : FontWeight.bold,
+            color: context.textColor,
+            fontSize: 14.sp,
+          ),
+        ),
+      ],
+      subMessageWidget: _PosterNameSubtext(
+        notification: notification,
+        postType: postType,
+        itemName: itemName,
+        priceMin: notification.priceMin,
+        priceMax: notification.priceMax,
+        returnType: notification.returnType,
+        returnItemName: notification.returnItemName,
+        timeAgo: timeAgo,
+      ),
+      actions: [
+        SizedBox(
+          width: double.infinity,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                children: [
+                  _buildActionBtn(actionButtonText, () {
+                    if (isUnread)
+                      notificationController.markAsRead(notification.id);
+                    if (notification.referenceId != null) {
+                      Navigator.pushNamed(context, AppRoutes.productDetails,
+                          arguments: notification.referenceId);
+                    }
+                  }),
+                  SizedBox(width: 8.w),
+                  _buildActionBtn('Ignore', () {
+                    if (onIgnore != null) {
+                      onIgnore();
+                    } else {
+                      notificationController.deleteNotification(notification.id);
+                      notificationController.notifications
+                          .removeWhere((n) => n.id == notification.id);
+                    }
+                  }),
+                ],
+              ),
+              Text(
+                timeAgo,
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  color: context.subTextColor,
+                  fontFamily: FontFamily.openSans,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      isUnread: isUnread,
+      onTap: () {
+        if (isUnread) notificationController.markAsRead(notification.id);
+        if (notification.referenceId != null) {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.productDetails,
+            arguments: notification.referenceId,
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildActionBtn(String text, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(4.r),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewPostNotificationCard(
+    BuildContext context, {
+    required String imageUrl,
+    required String distance,
+    required List<TextSpan> message,
+    required Widget subMessageWidget,
+    required bool isUnread,
+    required VoidCallback onTap,
+    List<Widget>? actions,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 15.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: isUnread
+              ? context.primaryColor.withOpacity(0.06)
+              : context.surfaceColor,
+          borderRadius: BorderRadius.circular(12.r),
+          border: isUnread
+              ? Border.all(
+                  color: context.primaryColor.withOpacity(0.1), width: 1)
+              : Border.all(color: Colors.transparent, width: 1),
+          boxShadow: context.isDarkMode
+              ? []
+              : [
+                  BoxShadow(
+                    color: isUnread
+                        ? context.primaryColor.withOpacity(0.05)
+                        : Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.r),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isUnread)
+                  Container(
+                    width: 5.w,
+                    color: context.primaryColor,
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(12.w),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 70.w,
+                          height: 70.w,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12.r),
+                            color: context.surfaceColor,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: AppCachedImage(
+                              imageUrl: imageUrl,
+                              width: 70.w,
+                              height: 70.w,
+                              fit: BoxFit.cover,
+                              errorWidget: _buildImageErrorPlaceholder(context),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: RichText(
+                                      text: TextSpan(children: message),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (distance.isNotEmpty) ...[
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      distance,
+                                      style: TextStyle(
+                                        color: context.subTextColor,
+                                        fontSize: 10.sp,
+                                        fontFamily: FontFamily.openSans,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              subMessageWidget,
+                              if (actions != null && actions.isNotEmpty) ...[
+                                SizedBox(height: 12.h),
+                                Wrap(
+                                  spacing: 8.w,
+                                  runSpacing: 8.h,
+                                  children: actions,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildGeneralNotificationCard(
-      BuildContext context, NotificationModel notification) {
+      BuildContext context, NotificationModel notification,
+      {VoidCallback? onIgnore}) {
     final notificationController = context.read<NotificationController>();
     final isUnread = notification.isRead == 0;
+
+    if (notification.notificationTitle
+        .toLowerCase()
+        .contains("new post nearby")) {
+      return _buildNewPostNearbyCard(context, notification, isUnread,
+          onIgnore: onIgnore);
+    }
 
     return InkWell(
       onTap: () {
@@ -993,6 +1419,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             }
             break;
           case 'review':
+          case 'new_user':
             // user says : createdBy = other user's id
             final userId = createdBy ?? refId;
             if (userId != null) {
@@ -1014,12 +1441,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
             break;
           case 'system':
+          case 'warning':
+          case 'admin':
             // just open notification detail / show message
             _showSystemNotificationDialog(context, notification);
             break;
           default:
             // Fallback for types not explicitly handled
-            if (refId != null) {
+            if (notification.notificationTitle
+                    .toLowerCase()
+                    .contains('warning') ||
+                notification.notificationTitle
+                    .toLowerCase()
+                    .contains('admin')) {
+              _showSystemNotificationDialog(context, notification);
+            } else if (refId != null) {
               Navigator.pushNamed(
                 context,
                 AppRoutes.productDetails,
@@ -1318,6 +1754,229 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Text(AppLocalizations.of(context)!.close),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PosterNameSubtext extends StatefulWidget {
+  final NotificationModel notification;
+  final String postType;
+  final String itemName;
+  final String? priceMin;
+  final String? priceMax;
+  final String? returnType;
+  final String? returnItemName;
+  final String timeAgo;
+
+  const _PosterNameSubtext({
+    required this.notification,
+    required this.postType,
+    required this.itemName,
+    this.priceMin,
+    this.priceMax,
+    this.returnType,
+    this.returnItemName,
+    required this.timeAgo,
+  });
+
+  @override
+  State<_PosterNameSubtext> createState() => _PosterNameSubtextState();
+}
+
+class _PosterNameSubtextState extends State<_PosterNameSubtext> {
+  String? _fetchedName;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchName();
+  }
+
+  Future<void> _fetchName() async {
+    if (widget.notification.creatorName != null &&
+        widget.notification.creatorName!.isNotEmpty) {
+      if (mounted)
+        setState(() => _fetchedName = widget.notification.creatorName);
+      return;
+    }
+    if (widget.notification.createdBy != null) {
+      if (mounted) setState(() => _isLoading = true);
+
+      final response = await ProfileService()
+          .fetchOtherProfile(widget.notification.createdBy!);
+
+      if (!mounted) return;
+      if (response.success && response.data != null) {
+        final profile = response.data!;
+        setState(() {
+          _fetchedName = profile.userDetails.fullName.isNotEmpty
+              ? profile.userDetails.fullName
+              : 'User #${widget.notification.createdBy}';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _fetchedName = 'User #${widget.notification.createdBy}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String? displayFirstName = _fetchedName?.trim().split(' ').first;
+    String prefix = displayFirstName != null && displayFirstName.isNotEmpty
+        ? '$displayFirstName is '
+        : (widget.notification.createdBy != null && _isLoading
+            ? 'Loading... '
+            : '');
+
+    if (prefix.isEmpty && widget.notification.createdBy != null) {
+      prefix = 'User #${widget.notification.createdBy} is ';
+    }
+
+    String subText = '$prefix${widget.postType} ${widget.itemName}';
+
+    if (widget.returnType?.toLowerCase() == 'price' &&
+        widget.priceMin != null) {
+      final pMin = widget.priceMin!;
+      final pMax = widget.priceMax ?? pMin;
+      final priceStr = pMin == pMax ? '₹$pMin' : '₹$pMin - ₹$pMax';
+      subText += '\nTaking $priceStr in return';
+    } else if (widget.returnItemName != null &&
+        widget.returnItemName!.isNotEmpty) {
+      subText += '\nTaking ${widget.returnItemName} in return';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 4.h),
+        Text(
+          subText,
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: context.subTextColor,
+            fontFamily: FontFamily.openSans,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AnimatedNotificationItem extends StatefulWidget {
+  final NotificationModel notification;
+  final Widget Function(BuildContext context, VoidCallback triggerRemove)
+      builder;
+
+  const _AnimatedNotificationItem({
+    super.key,
+    required this.notification,
+    required this.builder,
+  });
+
+  @override
+  State<_AnimatedNotificationItem> createState() =>
+      _AnimatedNotificationItemState();
+}
+
+class _AnimatedNotificationItemState extends State<_AnimatedNotificationItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _sizeAnimation;
+  bool _isRemoving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-1.2, 0.0),
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.65, curve: Curves.easeInOutCubic),
+    ));
+    _fadeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.55, curve: Curves.easeOut),
+    ));
+    _sizeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.35, 1.0, curve: Curves.easeInOutCubic),
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _triggerRemove() async {
+    if (_isRemoving) return;
+    setState(() {
+      _isRemoving = true;
+    });
+    await _controller.forward();
+    if (!mounted) return;
+    final notificationController = context.read<NotificationController>();
+    notificationController.deleteNotification(widget.notification.id);
+    notificationController.notifications
+        .removeWhere((n) => n.id == widget.notification.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isRemoving && _controller.isCompleted) {
+      return const SizedBox.shrink();
+    }
+    return SizeTransition(
+      sizeFactor: _sizeAnimation,
+      axisAlignment: -1.0,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Dismissible(
+            key: ValueKey('dismiss_notification_${widget.notification.id}'),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              final notificationController =
+                  context.read<NotificationController>();
+              notificationController
+                  .deleteNotification(widget.notification.id);
+              notificationController.notifications
+                  .removeWhere((n) => n.id == widget.notification.id);
+            },
+            background: Container(
+              margin: EdgeInsets.symmetric(horizontal: 15.w, vertical: 6.h),
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.only(right: 20.w),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Icon(Icons.delete_outline, color: Colors.red, size: 24.sp),
+            ),
+            child: widget.builder(context, _triggerRemove),
+          ),
+        ),
       ),
     );
   }

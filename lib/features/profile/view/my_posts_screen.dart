@@ -561,7 +561,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                 child: imagePath.isNotEmpty
                     ? AppCachedImage(
                         imageUrl: imagePath,
-                        fit: BoxFit.contain,
+                        fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
                         radius: 8.r,

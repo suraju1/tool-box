@@ -8,6 +8,7 @@ import 'package:tool_bocs/core/widgets/user_review_dialog.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
+import 'package:tool_bocs/features/web_ui/view/web_chat_screen.dart';
 
 class WebTradeSuccessScreen extends StatefulWidget {
   const WebTradeSuccessScreen({super.key});
@@ -51,8 +52,15 @@ class _WebTradeSuccessScreenState extends State<WebTradeSuccessScreen> {
   Widget build(BuildContext context) {
     final tradeController = context.watch<TradeController>();
     final subscriptionController = context.watch<SubscriptionController>();
+    final authController = context.watch<AuthController>();
     final response = tradeController.selectedResponse;
+    final isOwner = authController.currentUser?.id == response?.posterUserId;
     final posterName = response?.posterName ?? 'the owner';
+    final otherUserId = isOwner ? response?.responderId : response?.posterUserId;
+    final otherUserName =
+        isOwner ? response?.responderName : (response?.posterName ?? 'User');
+    final otherUserImage =
+        isOwner ? response?.responderImage : response?.posterImage;
 
     final creditFee =
         subscriptionController.mySubscription?.postPrice.split('.').first ??
@@ -149,21 +157,42 @@ class _WebTradeSuccessScreenState extends State<WebTradeSuccessScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pushReplacementNamed(
-                          context, AppRoutes.tradeDetails),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (response != null && otherUserId != null) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => WebChatScreen(
+                                otherUserId: otherUserId.toString(),
+                                otherUserName: otherUserName ?? 'User',
+                                otherUserImage: otherUserImage,
+                                tradeResponse: response,
+                              ),
+                            ),
+                          );
+                        } else {
+                          Navigator.pushReplacementNamed(context, AppRoutes.chat);
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: context.primaryColor,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: Text(
-                          AppLocalizations.of(context)!.viewTradeDetails,
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.chat_bubble_outline,
+                          color: Colors.white, size: 20),
+                      label: Text(
+                        response != null
+                            ? AppLocalizations.of(context)!
+                                .chatWith(otherUserName ?? 'User')
+                            : AppLocalizations.of(context)!.chat,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

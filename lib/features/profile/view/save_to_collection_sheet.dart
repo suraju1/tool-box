@@ -94,7 +94,7 @@ class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomShee
                               if (mounted) setState(() => _isSaving = true);
                               final response = await context
                                   .read<ProfileController>()
-                                  .addCollectionItem(collection.id, 'profile', widget.userId);
+                                  .addUserToCollection(collection.id, widget.userId);
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 if (response.success) {

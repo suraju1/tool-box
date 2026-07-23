@@ -685,6 +685,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whatDoYouWantIn => 'What do you want in return ?';
 
   @override
+  String get whatAreYouOffering => 'What are you offering ?';
+
+  @override
+  String get whatAreYouLookingFor => 'What are you looking for ?';
+
+  @override
   String get negotiable => 'Negotiable';
 
   @override

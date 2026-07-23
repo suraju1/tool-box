@@ -49,6 +49,7 @@ class TradeResponseModel {
   final String? postReturnType;
   final String? paymentAmount;
   final double? distanceKm;
+  final String? userMark;
 
   TradeResponseModel({
     required this.id,
@@ -97,6 +98,7 @@ class TradeResponseModel {
     this.postReturnType,
     this.paymentAmount,
     this.distanceKm,
+    this.userMark,
   });
 
   factory TradeResponseModel.fromJson(Map<String, dynamic> json) {
@@ -110,6 +112,18 @@ class TradeResponseModel {
           final decoded = jsonDecode(images);
           if (decoded is List) return decoded.map((e) => e.toString()).toList();
         } catch (_) {}
+      }
+      return [];
+    }
+
+    List<String> getImagesFromKeys(List<String> keys) {
+      for (final key in keys) {
+        if (json.containsKey(key)) {
+          final parsed = parseImages(json[key]);
+          if (parsed.isNotEmpty) {
+            return parsed;
+          }
+        }
       }
       return [];
     }
@@ -155,7 +169,17 @@ class TradeResponseModel {
           json['giving_is_store_bought'] == true ||
           json['is_store_bought'] == 1 ||
           json['is_store_bought'] == true),
-      itemImages: parseImages(json['giving_item_images'] ?? json['images']),
+      itemImages: getImagesFromKeys([
+        'giving_item_images',
+        'return_item_images',
+        'item_images',
+        'response_images',
+        'responder_item_images',
+        'offer_images',
+        'return_images',
+        'responder_images',
+        'images',
+      ]),
       status: json['status']?.toString().toLowerCase() ?? 'pending',
       paymentStatus: json['payment_status'] ?? 'unpaid',
       createdAt: json['created_at'] ?? '',
@@ -165,8 +189,11 @@ class TradeResponseModel {
               ? json['giving_item_name']
               : json['return_item_name']),
       returnItemName: json['return_item_name'],
-      postItemImages:
-          parseImages(json['post_item_images'] ?? json['post_images']),
+      postItemImages: getImagesFromKeys([
+        'post_item_images',
+        'post_images',
+        'giveaway_images',
+      ]),
       postType: json['post_type'],
       rejectedBy: json['rejected_by']?.toString(),
       rejectedReason: json['rejected_reason'],
@@ -189,7 +216,17 @@ class TradeResponseModel {
       givingItemName: json['giving_item_name'],
       givingItemCategory: json['giving_item_category'],
       givingItemCondition: json['giving_item_condition'],
-      givingItemImages: parseImages(json['giving_item_images']),
+      givingItemImages: getImagesFromKeys([
+        'giving_item_images',
+        'return_item_images',
+        'item_images',
+        'response_images',
+        'responder_item_images',
+        'offer_images',
+        'return_images',
+        'responder_images',
+        'images',
+      ]),
       returnItemCategory: json['return_item_category'],
       returnItemCondition: json['return_item_condition'],
       postReturnType: json['post_return_type'],
@@ -199,6 +236,7 @@ class TradeResponseModel {
         print('--- TradeResponseModel Parsing: id = ${json['id']}, distance_km = ${json['distance_km']}, distance = ${json['distance']}, parsed = $val');
         return val;
       }(),
+      userMark: json['user_mark']?.toString() ?? json['mark']?.toString(),
     );
   }
 
@@ -253,6 +291,7 @@ class TradeResponseModel {
       postReturnType: postReturnType,
       paymentAmount: paymentAmount,
       distanceKm: distanceKm,
+      userMark: userMark ?? this.userMark,
     );
   }
 }

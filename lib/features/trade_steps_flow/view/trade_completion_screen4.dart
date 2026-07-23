@@ -255,7 +255,7 @@ class _TradeCompletionScreenState extends State<TradeCompletionScreen> {
       } else if (offeringType == 'item') {
         offeringText = 'Offering ${itm ?? 'an item'}';
       } else {
-        offeringText = 'Asking for free';
+        offeringText = 'Giving Nothing in return';
       }
     } else {
       if (offeringType == 'price') {
@@ -308,16 +308,21 @@ class _TradeCompletionScreenState extends State<TradeCompletionScreen> {
 
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              otherUserId: response.posterUserId.toString(),
-              otherUserName: response.posterName ?? 'Owner',
-              tradeResponse: response,
+        if (!isPaid) {
+          final creditFee = '20';
+          _showClosureConfirmation(context, tradeController, creditFee);
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                otherUserId: response.posterUserId.toString(),
+                otherUserName: response.posterName ?? 'Owner',
+                tradeResponse: response,
+              ),
             ),
-          ),
-        );
+          );
+        }
       },
       child: Container(
         padding: EdgeInsets.all(16.w),
@@ -420,8 +425,7 @@ class _TradeCompletionScreenState extends State<TradeCompletionScreen> {
   }
 
   Widget _buildBottomAction(TradeController controller, bool isPaid) {
-    final subscription = context.watch<SubscriptionController>().mySubscription;
-    final creditFee = subscription?.postPrice.split('.').first ?? '5';
+    final creditFee = '20';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),

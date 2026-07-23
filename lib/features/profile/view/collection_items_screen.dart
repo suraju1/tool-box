@@ -95,7 +95,7 @@ class _CollectionItemsScreenState extends State<CollectionItemsScreen> {
     );
 
     if (confirm == true && mounted) {
-      final response = await context.read<ProfileController>().removeCollectionItem(widget.collection.id, itemId);
+      final response = await context.read<ProfileController>().removeUserFromCollection(widget.collection.id, itemId);
       if (response.success && mounted) {
         ToastService.showSuccessToast(context, 'Item removed');
         _fetchItems(); // Refresh

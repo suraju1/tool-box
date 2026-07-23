@@ -109,7 +109,7 @@ class ProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<ApiResponse<dynamic>> createCollection(String name) async {
+  Future<ApiResponse<CollectionModel>> createCollection(String name) async {
     _isLoading = true;
     notifyListeners();
 
@@ -143,6 +143,10 @@ class ProfileController extends ChangeNotifier {
     return response;
   }
 
+  Future<ApiResponse<List<CollectionItemModel>>> fetchCollectionMembers(int collectionId) async {
+    return fetchCollectionItems(collectionId);
+  }
+
   Future<ApiResponse<List<CollectionItemModel>>> fetchCollectionItems(int collectionId) async {
     final response = await _profileService.fetchCollectionItems(collectionId);
     if (!response.success) {
@@ -151,7 +155,21 @@ class ProfileController extends ChangeNotifier {
     return response;
   }
 
+  Future<ApiResponse<dynamic>> addUserToCollection(int collectionId, int targetUserId) async {
+    final response = await _profileService.addUserToCollection(collectionId, targetUserId);
+    if (response.success) {
+      await getCollections(); // Update the count in the collections list
+      await getSavedUsers(); // Update the "All Saved" list
+    } else {
+      _errorMessage = response.message;
+    }
+    return response;
+  }
+
   Future<ApiResponse<dynamic>> addCollectionItem(int collectionId, String itemType, int itemId) async {
+    if (itemType == 'profile' || itemType == 'user') {
+      return addUserToCollection(collectionId, itemId);
+    }
     final response = await _profileService.addCollectionItem(collectionId, itemType, itemId);
     if (response.success) {
       await getCollections(); // Update the count in the collections list
@@ -162,18 +180,22 @@ class ProfileController extends ChangeNotifier {
     return response;
   }
 
-  Future<ApiResponse<dynamic>> removeCollectionItem(int collectionId, int itemId) async {
-    final response = await _profileService.removeCollectionItem(collectionId, itemId);
+  Future<ApiResponse<dynamic>> removeUserFromCollection(int collectionId, int targetUserId) async {
+    final response = await _profileService.removeUserFromCollection(collectionId, targetUserId);
     if (response.success) {
       // User requested that removing from a collection should also remove from All Saved
-      await unsaveUser(itemId, removeFromCollections: false);
-      
+      await unsaveUser(targetUserId, removeFromCollections: false);
+
       await getCollections(); // Update the count in the collections list
       await getSavedUsers(); // Update the "All Saved" list
     } else {
       _errorMessage = response.message;
     }
     return response;
+  }
+
+  Future<ApiResponse<dynamic>> removeCollectionItem(int collectionId, int itemId) async {
+    return removeUserFromCollection(collectionId, itemId);
   }
 
   Future<ApiResponse<dynamic>> unsaveUser(int userId, {bool removeFromCollections = true}) async {
@@ -336,6 +358,71 @@ class ProfileController extends ChangeNotifier {
       notifyListeners();
     }
 
+    return response;
+  }
+
+  Future<ApiResponse<dynamic>> clearReviewComment(int reviewId) async {
+    final response = await _profileService.clearReviewComment(reviewId);
+    if (response.success) {
+      if (_ownProfile != null) {
+        final updatedReviews = _ownProfile!.reviews.map((r) {
+          if (r.id == reviewId) {
+            return Review(
+              id: r.id,
+              userId: r.userId,
+              reviewerId: r.reviewerId,
+              reviewerName: r.reviewerName,
+              reviewerImage: r.reviewerImage,
+              rating: r.rating,
+              feedbackLabel: r.feedbackLabel,
+              comment: null,
+              createdAt: r.createdAt,
+              likesCount: r.likesCount,
+              dislikesCount: r.dislikesCount,
+              userReaction: r.userReaction,
+            );
+          }
+          return r;
+        }).toList();
+
+        _ownProfile = UserProfileModel(
+          userDetails: _ownProfile!.userDetails,
+          tradeStats: _ownProfile!.tradeStats,
+          reviews: updatedReviews,
+          isSaved: _ownProfile!.isSaved,
+          isRated: _ownProfile!.isRated,
+          showTradeHistory: _ownProfile!.showTradeHistory,
+        );
+      }
+      notifyListeners();
+      getUserProfile(null, isOwnProfile: true); // background sync
+    } else {
+      _errorMessage = response.message;
+      notifyListeners();
+    }
+    return response;
+  }
+
+  Future<ApiResponse<dynamic>> deleteUserReview(int reviewId) async {
+    final response = await _profileService.deleteUserReview(reviewId);
+    if (response.success) {
+      if (_ownProfile != null) {
+        final updatedReviews = _ownProfile!.reviews.where((r) => r.id != reviewId).toList();
+        _ownProfile = UserProfileModel(
+          userDetails: _ownProfile!.userDetails,
+          tradeStats: _ownProfile!.tradeStats,
+          reviews: updatedReviews,
+          isSaved: _ownProfile!.isSaved,
+          isRated: _ownProfile!.isRated,
+          showTradeHistory: _ownProfile!.showTradeHistory,
+        );
+      }
+      notifyListeners();
+      getUserProfile(null, isOwnProfile: true); // background sync
+    } else {
+      _errorMessage = response.message;
+      notifyListeners();
+    }
     return response;
   }
 

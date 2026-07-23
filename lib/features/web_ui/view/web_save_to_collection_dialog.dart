@@ -219,8 +219,8 @@ class _WebSaveToCollectionDialogState extends State<WebSaveToCollectionDialog> {
                                 onTap: () async {
                                   final response = await context
                                       .read<ProfileController>()
-                                      .addCollectionItem(collection.id,
-                                          'profile', widget.userId);
+                                      .addUserToCollection(
+                                          collection.id, widget.userId);
                                   if (context.mounted) {
                                     Navigator.pop(context);
                                     if (response.success) {

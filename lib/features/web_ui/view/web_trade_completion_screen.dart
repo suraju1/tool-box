@@ -289,7 +289,7 @@ class _WebTradeCompletionScreenState extends State<WebTradeCompletionScreen> {
       } else if (offeringType == 'item') {
         offeringText = 'Offering ${itm ?? 'an item'}';
       } else {
-        offeringText = 'Asking for free';
+        offeringText = 'Giving Nothing in return';
       }
     } else {
       if (offeringType == 'price') {

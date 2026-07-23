@@ -35,4 +35,34 @@ class LocalLocationService {
     if (data == null) return null;
     return Map<String, String>.from(data);
   }
+
+  static const String _addressRadiusMapKey = 'address_radius_map';
+
+  static Future<void> saveAddressRadius(String key, double radius) async {
+    if (key.trim().isEmpty) return;
+    final box = Hive.box(_boxName);
+    final Map? existing = box.get(_addressRadiusMapKey);
+    final Map map = existing != null ? Map.from(existing) : {};
+    map[key.trim()] = radius;
+    await box.put(_addressRadiusMapKey, map);
+  }
+
+  static double? getAddressRadius(String key) {
+    if (key.trim().isEmpty) return null;
+    final box = Hive.box(_boxName);
+    final Map? map = box.get(_addressRadiusMapKey);
+    if (map == null || map[key.trim()] == null) return null;
+    return double.tryParse(map[key.trim()].toString());
+  }
+
+  static Future<void> removeAddressRadius(String key) async {
+    if (key.trim().isEmpty) return;
+    final box = Hive.box(_boxName);
+    final Map? existing = box.get(_addressRadiusMapKey);
+    if (existing == null || !existing.containsKey(key.trim())) return;
+    final Map map = Map.from(existing);
+    map.remove(key.trim());
+    await box.put(_addressRadiusMapKey, map);
+  }
 }
+

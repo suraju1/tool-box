@@ -82,15 +82,17 @@ class AppCachedImage extends StatelessWidget {
     final absoluteUrl = getFormattedUrl(imageUrl);
     final pixelRatio = MediaQuery.of(context).devicePixelRatio;
 
-    // Calculate memory cache dimensions if not provided but display dimensions are available
-    // We multiply by pixelRatio to ensure sharpness on high-density screens
-    // Added isFinite check to prevent "Infinity or NaN toInt" crash
+    // Calculate memory cache dimensions if not provided but display dimensions are available.
+    // IMPORTANT: To prevent Flutter's ResizeImage from distorting / stretching (`tedhi`) the 
+    // bitmap in memory when both width & height are provided, we ONLY pass one dimension 
+    // (calculatedMemCacheWidth OR calculatedMemCacheHeight) unless explicitly set by caller.
+    // This guarantees the decoded image retains its true, natural aspect ratio (`straight`).
     final int? calculatedMemCacheWidth = memCacheWidth ??
-        (width != null && width! > 0 && width!.isFinite
+        (width != null && width! > 0 && width!.isFinite && width != double.infinity
             ? (width! * pixelRatio).round()
             : null);
     final int? calculatedMemCacheHeight = memCacheHeight ??
-        (height != null && height! > 0 && height!.isFinite
+        (memCacheWidth == null && calculatedMemCacheWidth == null && height != null && height! > 0 && height!.isFinite && height != double.infinity
             ? (height! * pixelRatio).round()
             : null);
 

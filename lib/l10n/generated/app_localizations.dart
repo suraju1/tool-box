@@ -1414,6 +1414,18 @@ abstract class AppLocalizations {
   /// **'What do you want in return ?'**
   String get whatDoYouWantIn;
 
+  /// No description provided for @whatAreYouOffering.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you offering ?'**
+  String get whatAreYouOffering;
+
+  /// No description provided for @whatAreYouLookingFor.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you looking for ?'**
+  String get whatAreYouLookingFor;
+
   /// No description provided for @negotiable.
   ///
   /// In en, this message translates to:

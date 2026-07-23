@@ -15,7 +15,7 @@ class CollectionModel {
     return CollectionModel(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      itemCount: json['item_count'] ?? 0,
+      itemCount: json['member_count'] ?? json['item_count'] ?? 0,
       createdAt: json['created_at'] ?? '',
     );
   }
@@ -25,6 +25,7 @@ class CollectionModel {
       'id': id,
       'name': name,
       'item_count': itemCount,
+      'member_count': itemCount,
       'created_at': createdAt,
     };
   }

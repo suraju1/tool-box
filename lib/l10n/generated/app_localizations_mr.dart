@@ -690,6 +690,12 @@ class AppLocalizationsMr extends AppLocalizations {
   String get whatDoYouWantIn => 'त्या बदल्यात तुम्हाला काय हवे आहे?';
 
   @override
+  String get whatAreYouOffering => 'तुम्ही काय देत आहात ?';
+
+  @override
+  String get whatAreYouLookingFor => 'तुम्ही काय शोधत आहात ?';
+
+  @override
   String get negotiable => 'निगोशिएबल';
 
   @override

@@ -313,7 +313,7 @@ class _GiveScreenState extends State<GiveScreen> {
               PopupMenuButton<void>(
                 offset: const Offset(-200, 50),
                 shape: PopupMenuArrowShape(borderRadius: 12.r),
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 surfaceTintColor: Colors.transparent,
                 elevation: 4,
                 itemBuilder: (context) => [
@@ -329,7 +329,7 @@ class _GiveScreenState extends State<GiveScreen> {
                           Text(
                             AppLocalizations.of(context)!.seeWhatPeopleWantAround,
                             style: TextStyle(
-                              color: const Color(0xFF111311),
+                              color: context.textColor,
                               fontSize: 14.sp,
                               fontWeight: FontWeight.bold,
                               fontFamily: FontFamily.openSans,
@@ -339,7 +339,7 @@ class _GiveScreenState extends State<GiveScreen> {
                           Text(
                             AppLocalizations.of(context)!.seeExistingPostsByTakers,
                             style: TextStyle(
-                              color: Colors.grey.shade700,
+                              color: context.subTextColor,
                               fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               fontFamily: FontFamily.openSans,
@@ -349,7 +349,7 @@ class _GiveScreenState extends State<GiveScreen> {
                           Text(
                             AppLocalizations.of(context)!.respondToPostsMentionWhat1,
                             style: TextStyle(
-                              color: Colors.grey.shade700,
+                              color: context.subTextColor,
                               fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
                               fontFamily: FontFamily.openSans,
@@ -370,12 +370,12 @@ class _GiveScreenState extends State<GiveScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.help_outline,
-                            size: 18.sp, color: context.primaryColor),
+                            size: 18.sp, color: context.textColor),
                         SizedBox(width: 8.w),
                         Text(
                           AppLocalizations.of(context)!.helpSupport,
                           style: TextStyle(
-                            color: context.primaryColor,
+                            color: context.textColor,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.bold,
                             fontFamily: FontFamily.openSans,

@@ -238,13 +238,24 @@ class _WebLocationSelectionDialogState
       if (addr.address.contains(' - ')) {
         final customLabel = addr.address.split(' - ').first.trim();
         if (customLabel.isNotEmpty) {
-          return customLabel[0].toUpperCase() + customLabel.substring(1);
+          return 'OTHER - ${customLabel[0].toUpperCase()}${customLabel.substring(1)}';
         }
       }
-      return 'Other';
+      return 'OTHER';
     }
     if (addr.label.isEmpty) return 'Location';
     return addr.label[0].toUpperCase() + addr.label.substring(1).toLowerCase();
+  }
+
+  String _getDisplayAddress(AddressModel addr) {
+    if (addr.label.toLowerCase() == 'other' && addr.address.contains(' - ')) {
+      final idx = addr.address.indexOf(' - ');
+      final customLabel = addr.address.substring(0, idx).trim();
+      if (customLabel.isNotEmpty) {
+        return addr.address.substring(idx + 3).trim();
+      }
+    }
+    return addr.address;
   }
 
   Widget _buildSavedAddressItem(AddressModel addr) {
@@ -313,7 +324,7 @@ class _WebLocationSelectionDialogState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    addr.address,
+                    _getDisplayAddress(addr),
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -360,6 +371,13 @@ class _WebLocationSelectionDialogState
               if (!context.mounted) return;
               if (response.success) {
                 ToastService.showSuccessToast(context, 'Address deleted');
+                final addressController = context.read<AddressController>();
+                final authController = context.read<AuthController>();
+                context.read<LocationController>().handleAddressDeleted(
+                  deletedAddr: addr,
+                  remainingAddresses: addressController.addresses,
+                  userProfile: authController.currentUser,
+                );
               } else {
                 ToastService.showErrorToast(context, response.message);
               }

@@ -207,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             final firstMsgTime = firstMsgTimestamp.toDate();
                             final now = DateTime.now();
                             final difference = now.difference(firstMsgTime);
-                            if (difference.inHours >= 72) {
+                            if (difference.inHours >= 24) {
                               isChatDisabled = true;
                             }
                           }

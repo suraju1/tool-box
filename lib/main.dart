@@ -109,8 +109,19 @@ void main() async {
                 create: (_) => AuthController()), // Auth controller
             ChangeNotifierProvider(
                 create: (_) => LocationController()), // Location controller
-            ChangeNotifierProvider(
-                create: (_) => TradeController()), // Trade controller
+            ChangeNotifierProxyProvider<LocationController, TradeController>(
+              create: (_) => TradeController(),
+              update: (context, locationController, previousTradeController) {
+                final controller = previousTradeController ?? TradeController();
+                controller.updateLocationAndFetchIfNeeded(
+                  locationController.latitude,
+                  locationController.longitude,
+                  locationController.updateTimestamp,
+                  radius: locationController.radius,
+                );
+                return controller;
+              },
+            ), // Trade controller
             ChangeNotifierProvider(
                 create: (_) => ProfileController()), // Profile controller
             ChangeNotifierProvider(

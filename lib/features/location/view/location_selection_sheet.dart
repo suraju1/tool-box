@@ -264,14 +264,24 @@ class _LocationSelectionSheetState extends State<LocationSelectionSheet> {
       if (addr.address.contains(' - ')) {
         final customLabel = addr.address.split(' - ').first.trim();
         if (customLabel.isNotEmpty) {
-          // Capitalize first letter
-          return customLabel[0].toUpperCase() + customLabel.substring(1);
+          return 'OTHER - ${customLabel[0].toUpperCase()}${customLabel.substring(1)}';
         }
       }
-      return 'Other';
+      return 'OTHER';
     }
     if (addr.label.isEmpty) return 'Location';
     return addr.label[0].toUpperCase() + addr.label.substring(1).toLowerCase();
+  }
+
+  String _getDisplayAddress(AddressModel addr) {
+    if (addr.label.toLowerCase() == 'other' && addr.address.contains(' - ')) {
+      final idx = addr.address.indexOf(' - ');
+      final customLabel = addr.address.substring(0, idx).trim();
+      if (customLabel.isNotEmpty) {
+        return addr.address.substring(idx + 3).trim();
+      }
+    }
+    return addr.address;
   }
 
   Widget _buildSavedAddressItem(AddressModel addr) {
@@ -339,7 +349,7 @@ class _LocationSelectionSheetState extends State<LocationSelectionSheet> {
                     ],
                   ),
                   Text(
-                    addr.address,
+                    _getDisplayAddress(addr),
                     style: TextStyle(fontSize: 12.sp, color: Colors.grey),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -386,6 +396,13 @@ class _LocationSelectionSheetState extends State<LocationSelectionSheet> {
               context.read<AddressController>().deleteAddress(addr.id!).then((response) {
                 if (response.success) {
                   ToastService.showSuccessToast(context, 'Address deleted');
+                  final addressController = context.read<AddressController>();
+                  final authController = context.read<AuthController>();
+                  context.read<LocationController>().handleAddressDeleted(
+                    deletedAddr: addr,
+                    remainingAddresses: addressController.addresses,
+                    userProfile: authController.currentUser,
+                  );
                 } else {
                   ToastService.showErrorToast(context, response.message);
                 }

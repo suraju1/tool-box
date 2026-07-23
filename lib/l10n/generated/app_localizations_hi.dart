@@ -688,6 +688,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get whatDoYouWantIn => 'तम्हे बदले में क्या चाहिए ?';
 
   @override
+  String get whatAreYouOffering => 'आप क्या दे रहे हैं ?';
+
+  @override
+  String get whatAreYouLookingFor => 'आप क्या ढूंढ रहे हैं ?';
+
+  @override
   String get negotiable => 'बातचीत योग्य';
 
   @override

@@ -91,15 +91,19 @@ class TradeResponseRequestModel {
           if (kIsWeb) {
             final xFile = image is XFile ? image : XFile(path);
             final bytes = await xFile.readAsBytes();
-            formData.files.add(MapEntry(
-              'images',
-              MultipartFile.fromBytes(bytes, filename: xFile.name),
-            ));
+            for (final key in ['images', 'item_images', 'giving_item_images', 'return_item_images']) {
+              formData.files.add(MapEntry(
+                key,
+                MultipartFile.fromBytes(bytes, filename: xFile.name),
+              ));
+            }
           } else {
-            formData.files.add(MapEntry(
-              'images',
-              await MultipartFile.fromFile(path),
-            ));
+            for (final key in ['images', 'item_images', 'giving_item_images', 'return_item_images']) {
+              formData.files.add(MapEntry(
+                key,
+                await MultipartFile.fromFile(path),
+              ));
+            }
           }
         }
       }

@@ -60,131 +60,158 @@ class BottomNavBarScreen extends StatelessWidget {
               TextStyle(fontWeight: FontWeight.normal, fontSize: 12.sp),
           items: [
             BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home_outlined,
-                color: greyColor,
-                size: 24.sp,
+              icon: _buildAnimatedIcon(
+                isSelected: false,
+                child: Icon(
+                  Icons.dashboard_outlined,
+                  color: greyColor,
+                  size: 24.sp,
+                ),
               ),
-              activeIcon: Icon(
-                Icons.home,
-                color: context.primaryColor,
-                size: 24.sp,
+              activeIcon: _buildAnimatedIcon(
+                isSelected: true,
+                child: Icon(
+                  Icons.dashboard,
+                  color: context.primaryColor,
+                  size: 24.sp,
+                ),
               ),
               label: AppLocalizations.of(context)!.home,
             ),
             BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/give.svg',
-                colorFilter: ColorFilter.mode(greyColor, BlendMode.srcIn),
+              icon: _buildAnimatedIcon(
+                isSelected: false,
+                child: Icon(
+                  Icons.file_upload_outlined,
+                  color: greyColor,
+                  size: 24.sp,
+                ),
               ),
-              activeIcon: SvgPicture.asset(
-                'assets/icons/give.svg',
-                colorFilter:
-                    ColorFilter.mode(context.primaryColor, BlendMode.srcIn),
+              activeIcon: _buildAnimatedIcon(
+                isSelected: true,
+                child: Icon(
+                  Icons.file_upload,
+                  color: context.primaryColor,
+                  size: 24.sp,
+                ),
               ),
               label: AppLocalizations.of(context)!.give,
             ),
             BottomNavigationBarItem(
-              icon: SvgPicture.asset(
-                'assets/icons/take.svg',
-                colorFilter: ColorFilter.mode(greyColor, BlendMode.srcIn),
+              icon: _buildAnimatedIcon(
+                isSelected: false,
+                child: Icon(
+                  Icons.file_download_outlined,
+                  color: greyColor,
+                  size: 24.sp,
+                ),
               ),
-              activeIcon: SvgPicture.asset(
-                'assets/icons/take.svg',
-                colorFilter:
-                    ColorFilter.mode(context.primaryColor, BlendMode.srcIn),
+              activeIcon: _buildAnimatedIcon(
+                isSelected: true,
+                child: Icon(
+                  Icons.file_download,
+                  color: context.primaryColor,
+                  size: 24.sp,
+                ),
               ),
               label: AppLocalizations.of(context)!.take,
             ),
             BottomNavigationBarItem(
-              icon: StreamBuilder<int>(
-                stream: ChatService().getTotalUnreadCount(),
-                builder: (context, snapshot) {
-                  int count = snapshot.data ?? 0;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icons/chat.svg',
-                        colorFilter: ColorFilter.mode(greyColor, BlendMode.srcIn),
-                      ),
-                      if (count > 0)
-                        Positioned(
-                          right: -5,
-                          top: -5,
-                          child: Container(
-                            padding: EdgeInsets.all(4.r),
-                            decoration: BoxDecoration(
-                              color: context.primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: context.onPrimaryColor, width: 1.5),
-                            ),
-                            constraints: BoxConstraints(
-                              minWidth: 16.r,
-                              minHeight: 16.r,
-                            ),
-                            child: Center(
-                              child: Text(
-                                count > 99 ? '99+' : count.toString(),
-                                style: TextStyle(
-                                  color: context.onPrimaryColor,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.bold,
+              icon: _buildAnimatedIcon(
+                isSelected: false,
+                child: StreamBuilder<int>(
+                  stream: ChatService().getTotalUnreadCount(),
+                  builder: (context, snapshot) {
+                    int count = snapshot.data ?? 0;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.message_outlined,
+                          color: greyColor,
+                          size: 24.sp,
+                        ),
+                        if (count > 0)
+                          Positioned(
+                            right: -5,
+                            top: -5,
+                            child: Container(
+                              padding: EdgeInsets.all(4.r),
+                              decoration: BoxDecoration(
+                                color: context.primaryColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: context.onPrimaryColor, width: 1.5),
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: 16.r,
+                                minHeight: 16.r,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  count > 99 ? '99+' : count.toString(),
+                                  style: TextStyle(
+                                    color: context.onPrimaryColor,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
-              activeIcon: StreamBuilder<int>(
-                stream: ChatService().getTotalUnreadCount(),
-                builder: (context, snapshot) {
-                  int count = snapshot.data ?? 0;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icons/chat.svg',
-                        colorFilter: ColorFilter.mode(
-                            context.primaryColor, BlendMode.srcIn),
-                      ),
-                      if (count > 0)
-                        Positioned(
-                          right: -5,
-                          top: -5,
-                          child: Container(
-                            padding: EdgeInsets.all(4.r),
-                            decoration: BoxDecoration(
-                              color: context.primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: context.onPrimaryColor, width: 1.5),
-                            ),
-                            constraints: BoxConstraints(
-                              minWidth: 16.r,
-                              minHeight: 16.r,
-                            ),
-                            child: Center(
-                              child: Text(
-                                count > 99 ? '99+' : count.toString(),
-                                style: TextStyle(
-                                  color: context.onPrimaryColor,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.bold,
+              activeIcon: _buildAnimatedIcon(
+                isSelected: true,
+                child: StreamBuilder<int>(
+                  stream: ChatService().getTotalUnreadCount(),
+                  builder: (context, snapshot) {
+                    int count = snapshot.data ?? 0;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.message,
+                          color: context.primaryColor,
+                          size: 24.sp,
+                        ),
+                        if (count > 0)
+                          Positioned(
+                            right: -5,
+                            top: -5,
+                            child: Container(
+                              padding: EdgeInsets.all(4.r),
+                              decoration: BoxDecoration(
+                                color: context.primaryColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: context.onPrimaryColor, width: 1.5),
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: 16.r,
+                                minHeight: 16.r,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  count > 99 ? '99+' : count.toString(),
+                                  style: TextStyle(
+                                    color: context.onPrimaryColor,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
               label: AppLocalizations.of(context)!.chat,
             ),
@@ -196,6 +223,27 @@ class BottomNavBarScreen extends StatelessWidget {
     return ResponsiveLayout(
       mobileScreen: mobileScaffold,
       webScreen: const WebDashboardWrapper(child: WebHomeScreen()),
+    );
+  }
+
+  Widget _buildAnimatedIcon({
+    required Widget child,
+    required bool isSelected,
+  }) {
+    return TweenAnimationBuilder<double>(
+      duration: Duration(milliseconds: isSelected ? 300 : 200),
+      tween: Tween<double>(
+        begin: isSelected ? 0.9 : 1.18,
+        end: isSelected ? 1.18 : 1.0,
+      ),
+      curve: isSelected ? Curves.easeOutBack : Curves.easeOut,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: child,
+        );
+      },
+      child: child,
     );
   }
 }

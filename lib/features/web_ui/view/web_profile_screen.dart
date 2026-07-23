@@ -8,6 +8,7 @@ import 'package:tool_bocs/core/widgets/app_cached_image.dart';
 import 'package:tool_bocs/routes/app_routes.dart';
 import 'package:tool_bocs/features/profile/model/user_profile_model.dart';
 import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
+import 'package:tool_bocs/core/services/toast_service.dart';
 
 class WebProfileScreen extends StatelessWidget {
   const WebProfileScreen({super.key});
@@ -309,6 +310,42 @@ class WebProfileScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _confirmClearComment(BuildContext context, int reviewId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text('Delete Comment',
+            style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color)),
+        content: Text('Are you sure you want to delete this comment?',
+            style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      final response =
+          await context.read<ProfileController>().clearReviewComment(reviewId);
+      if (response.success && context.mounted) {
+        ToastService.showSuccessToast(context, 'Comment deleted successfully');
+      } else if (context.mounted) {
+        ToastService.showErrorToast(
+            context, response.message ?? 'Failed to delete comment');
+      }
+    }
+  }
+
   Widget _buildMarksOfSuraj(
       BuildContext context,
       String fullName,
@@ -409,10 +446,27 @@ class WebProfileScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              review.feedbackLabel ?? "Review",
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    review.feedbackLabel ?? "Review",
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                ),
+                                if (review.comment?.isNotEmpty == true)
+                                  InkWell(
+                                    onTap: () => _confirmClearComment(context, review.id),
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      child: Icon(Icons.delete_outline,
+                                          color: Colors.red.withOpacity(0.85), size: 18),
+                                    ),
+                                  ),
+                              ],
                             ),
                             const SizedBox(height: 4),
                             Text(

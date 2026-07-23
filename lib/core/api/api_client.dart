@@ -206,6 +206,25 @@ class ApiClient {
     }
   }
 
+  /// Generic PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw e.error ?? UnknownException();
+    }
+  }
+
   /// Generic DELETE request
   Future<Response> delete(
     String path, {

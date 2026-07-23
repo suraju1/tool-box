@@ -992,6 +992,8 @@ class _WebTradeOfferScreenState extends State<WebTradeOfferScreen> {
           isExpanded: true,
           value: _selectedCategory,
           items: tradeController.categories
+              .where((category) =>
+                  category.name.toLowerCase() != 'money' && category.id != 14)
               .map((category) =>
                   DropdownMenuItem(value: category, child: Text(category.name)))
               .toList(),

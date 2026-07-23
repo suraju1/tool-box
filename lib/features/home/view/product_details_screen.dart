@@ -163,7 +163,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       body: Consumer2<TradeController, LocationController>(
         builder: (context, controller, locationController, child) {
           if (controller.errorMessage != null) {
-            return Center(child: Text(controller.errorMessage!));
+            return Center(child: Text('${controller.errorMessage!} (ID: ${widget.postId})'));
           }
 
           if (widget.postId == 0) {
@@ -218,11 +218,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         left: 10.w,
                         child: _buildCategoryTag(post.itemCategory),
                       ),
-                      Positioned(
-                        top: 10.h,
-                        right: 10.w,
-                        child: _buildTradeTypeTag(post.tradeType),
-                      ),
                     ],
                   ),
                 Padding(
@@ -230,14 +225,105 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        post.itemName,
-                        style: TextStyle(
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: FontFamily.openSans,
-                          color: context.textColor,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              post.itemName,
+                              style: TextStyle(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: FontFamily.openSans,
+                                color: context.textColor,
+                              ),
+                            ),
+                          ),
+                          if (post.tradeType.toLowerCase() == 'temporary') ...[
+                            SizedBox(width: 8.w),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(32.r),
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return Dialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16.r),
+                                      ),
+                                      backgroundColor: context.surfaceColor,
+                                      child: Padding(
+                                        padding: EdgeInsets.all(20.w),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  'Offer Type',
+                                                  style: TextStyle(
+                                                    fontSize: 16.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: context.textColor,
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  icon: Icon(Icons.close, color: context.textColor),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                ),
+                                              ],
+                                            ),
+                                            SizedBox(height: 12.h),
+                                            RichText(
+                                              text: TextSpan(
+                                                style: TextStyle(
+                                                  fontSize: 13.sp,
+                                                  color: context.textColor,
+                                                  height: 1.5,
+                                                  fontFamily: FontFamily.openSans,
+                                                ),
+                                                children: const [
+                                                  TextSpan(text: 'Temporary: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  TextSpan(text: 'Stays for 48 hours (make it active for free)'),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(height: 8.h),
+                                            RichText(
+                                              text: TextSpan(
+                                                style: TextStyle(
+                                                  fontSize: 13.sp,
+                                                  color: context.textColor,
+                                                  height: 1.5,
+                                                  fontFamily: FontFamily.openSans,
+                                                ),
+                                                children: const [
+                                                  TextSpan(text: 'Permanent: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  TextSpan(text: 'Permanently stays on account until you remove it'),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(height: 4.h),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              child: Image.asset(
+                                'assets/temporary_logo.png',
+                                width: 44.w,
+                                height: 44.w,
+                                color: context.isDarkMode ? Colors.white : Colors.black,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       SizedBox(height: 15.h),
                       Text(
@@ -594,16 +680,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   final imagePath = images[index];
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(20.r),
-                    child: AppCachedImage(
-                      imageUrl: imagePath,
-                      fit: BoxFit.contain,
-                      width: 1.sw - 40.w,
-                      height: 320.h,
-                      radius: 20.r,
-                      errorWidget: Image.asset(
-                        'assets/iphone.png',
+                    child: Container(
+                      color: context.isDarkMode
+                          ? Colors.black26
+                          : Colors.grey.withOpacity(0.08),
+                      child: AppCachedImage(
+                        imageUrl: imagePath,
                         fit: BoxFit.cover,
-                        width: double.infinity,
+                        width: 1.sw - 40.w,
+                        height: 320.h,
+                        radius: 20.r,
+                        errorWidget: Image.asset(
+                          'assets/iphone.png',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
                       ),
                     ),
                   );
@@ -636,11 +727,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 top: 10.h,
                 left: 10.w,
                 child: _buildCategoryTag(category),
-              ),
-              Positioned(
-                top: 10.h,
-                right: 10.w,
-                child: _buildTradeTypeTag(tradeType),
               ),
             ],
           ),
@@ -684,6 +770,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   Widget _buildTradeTypeTag(String tradeType) {
     if (tradeType.isEmpty) return const SizedBox.shrink();
+    if (tradeType.toLowerCase() == 'permanent') return const SizedBox.shrink();
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
       decoration: BoxDecoration(
@@ -956,10 +1043,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           vertical: 4.h,
                         ),
                         decoration: BoxDecoration(
-                          color: (post.postType.toLowerCase() == 'take' ||
-                                  post.postType.toLowerCase() == 'taking')
-                              ? const Color(0xFFFFE8E8)
-                              : const Color(0xFFE8F5E9),
+                          color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(
@@ -968,10 +1052,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               ? 'Taking'
                               : 'Giving',
                           style: TextStyle(
-                            color: (post.postType.toLowerCase() == 'take' ||
-                                    post.postType.toLowerCase() == 'taking')
-                                ? const Color(0xFFD32F2F)
-                                : const Color(0xFF2E7D32),
+                            color: Colors.grey.shade700,
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w800,
                             textBaseline: TextBaseline.alphabetic,

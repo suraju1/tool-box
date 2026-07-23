@@ -6,6 +6,7 @@ class AddressModel {
   final double latitude;
   final double longitude;
   final int isDefault;
+  final double? radius;
 
   AddressModel({
     this.id,
@@ -15,6 +16,7 @@ class AddressModel {
     required this.latitude,
     required this.longitude,
     required this.isDefault,
+    this.radius,
   });
 
   factory AddressModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class AddressModel {
       latitude: double.tryParse(json['latitude']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0,
       isDefault: json['is_default'] ?? 0,
+      radius: double.tryParse(json['radius']?.toString() ?? json['radius_km']?.toString() ?? ''),
     );
   }
 
@@ -38,6 +41,9 @@ class AddressModel {
       'latitude': latitude,
       'longitude': longitude,
       'is_default': isDefault,
+      if (radius != null) 'radius': radius,
+      if (radius != null) 'radius_km': radius,
     };
   }
 }
+

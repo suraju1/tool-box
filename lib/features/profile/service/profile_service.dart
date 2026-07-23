@@ -112,6 +112,54 @@ class ProfileService {
     }
   }
 
+  Future<ApiResponse<dynamic>> deleteUserReview(int reviewId) async {
+    try {
+      final response = await _apiClient.delete(
+        ApiConstants.deleteUserReview.replaceFirst('{{id}}', reviewId.toString()),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return ApiResponse(
+          success: data['success'] ?? false,
+          message: data['message'] ?? 'Review deleted successfully',
+          data: data['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse<dynamic>> clearReviewComment(int reviewId) async {
+    try {
+      final response = await _apiClient.patch(
+        ApiConstants.clearReviewComment.replaceFirst('{{id}}', reviewId.toString()),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return ApiResponse(
+          success: data['success'] ?? false,
+          message: data['message'] ?? 'Comment cleared successfully',
+          data: data['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
   Future<ApiResponse<dynamic>> submitUserReview(
       UserReviewRequestModel request) async {
     try {
@@ -293,7 +341,35 @@ class ProfileService {
     }
   }
 
+  Future<ApiResponse<dynamic>> addUserToCollection(int collectionId, int targetUserId) async {
+    try {
+      final endpoint = ApiConstants.addUserToCollection
+          .replaceFirst('{{collectionId}}', collectionId.toString())
+          .replaceFirst('{{targetUserId}}', targetUserId.toString());
+      final response = await _apiClient.post(endpoint);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        return ApiResponse(
+          success: data['success'] ?? false,
+          message: data['message'] ?? 'User added to collection successfully',
+          data: data['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Server error: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
   Future<ApiResponse<dynamic>> addCollectionItem(int collectionId, String itemType, int itemId) async {
+    if (itemType == 'profile' || itemType == 'user') {
+      return addUserToCollection(collectionId, itemId);
+    }
     try {
       final response = await _apiClient.post(
         ApiConstants.collectionItems.replaceFirst('{{id}}', collectionId.toString()),
@@ -318,25 +394,39 @@ class ProfileService {
     }
   }
 
+  Future<ApiResponse<List<CollectionItemModel>>> fetchCollectionMembers(int collectionId) async {
+    return fetchCollectionItems(collectionId);
+  }
+
   Future<ApiResponse<List<CollectionItemModel>>> fetchCollectionItems(int collectionId) async {
     try {
-      final response = await _apiClient.get(
-        ApiConstants.fetchCollectionItems.replaceFirst('{{id}}', collectionId.toString()),
-      );
+      final endpoint = ApiConstants.fetchCollectionMembers
+          .replaceFirst('{{collectionId}}', collectionId.toString())
+          .replaceFirst('{{id}}', collectionId.toString());
+      final response = await _apiClient.get(endpoint);
 
       if (response.statusCode == 200) {
         final data = response.data;
-        if (data['success'] == true && data['data'] != null && data['data']['items'] != null) {
-          final List<dynamic> itemsData = data['data']['items'];
+        if (data['success'] == true && data['data'] != null) {
+          List<dynamic> itemsData;
+          if (data['data'] is List) {
+            itemsData = data['data'];
+          } else if (data['data'] is Map && data['data']['members'] != null) {
+            itemsData = data['data']['members'];
+          } else if (data['data'] is Map && data['data']['items'] != null) {
+            itemsData = data['data']['items'];
+          } else {
+            itemsData = [];
+          }
           return ApiResponse(
             success: true,
-            message: data['message'] ?? 'Collection items fetched successfully',
+            message: data['message'] ?? 'Collection members fetched successfully',
             data: itemsData.map((e) => CollectionItemModel.fromJson(e)).toList(),
           );
         } else {
           return ApiResponse(
             success: false,
-            message: data['message'] ?? 'Failed to fetch collection items',
+            message: data['message'] ?? 'Failed to fetch collection members',
           );
         }
       } else {
@@ -350,19 +440,20 @@ class ProfileService {
     }
   }
 
-  Future<ApiResponse<dynamic>> removeCollectionItem(int collectionId, int itemId) async {
+  Future<ApiResponse<dynamic>> removeUserFromCollection(int collectionId, int targetUserId) async {
     try {
-      final response = await _apiClient.delete(
-        ApiConstants.removeCollectionItem
-            .replaceFirst('{{id}}', collectionId.toString())
-            .replaceFirst('{{itemId}}', itemId.toString()),
-      );
+      final endpoint = ApiConstants.removeUserFromCollection
+          .replaceFirst('{{collectionId}}', collectionId.toString())
+          .replaceFirst('{{targetUserId}}', targetUserId.toString())
+          .replaceFirst('{{id}}', collectionId.toString())
+          .replaceFirst('{{itemId}}', targetUserId.toString());
+      final response = await _apiClient.delete(endpoint);
 
       if (response.statusCode == 200) {
         final data = response.data;
         return ApiResponse(
           success: data['success'] ?? false,
-          message: data['message'] ?? 'Item removed from collection successfully',
+          message: data['message'] ?? 'User removed from collection successfully',
           data: data['data'],
         );
       } else {
@@ -376,11 +467,16 @@ class ProfileService {
     }
   }
 
+  Future<ApiResponse<dynamic>> removeCollectionItem(int collectionId, int itemId) async {
+    return removeUserFromCollection(collectionId, itemId);
+  }
+
   Future<ApiResponse<dynamic>> deleteCollection(int collectionId) async {
     try {
-      final response = await _apiClient.delete(
-        ApiConstants.deleteCollection.replaceFirst('{{id}}', collectionId.toString()),
-      );
+      final endpoint = ApiConstants.deleteCollection
+          .replaceFirst('{{collectionId}}', collectionId.toString())
+          .replaceFirst('{{id}}', collectionId.toString());
+      final response = await _apiClient.delete(endpoint);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -482,7 +578,7 @@ class ProfileService {
 
   Future<ApiResponse<List<CollectionModel>>> fetchCollections() async {
     try {
-      final response = await _apiClient.get(ApiConstants.collections);
+      final response = await _apiClient.get(ApiConstants.listCollections);
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -510,10 +606,10 @@ class ProfileService {
     }
   }
 
-  Future<ApiResponse<dynamic>> createCollection(String name) async {
+  Future<ApiResponse<CollectionModel>> createCollection(String name) async {
     try {
       final response = await _apiClient.post(
-        ApiConstants.collections,
+        ApiConstants.createCollection,
         data: {'name': name},
       );
 
@@ -522,7 +618,9 @@ class ProfileService {
         return ApiResponse(
           success: data['success'] ?? false,
           message: data['message'] ?? 'Collection created successfully',
-          data: data['data'],
+          data: data['data'] != null
+              ? CollectionModel.fromJson(data['data'])
+              : null,
         );
       } else {
         return ApiResponse(

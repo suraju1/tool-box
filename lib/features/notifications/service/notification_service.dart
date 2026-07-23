@@ -9,6 +9,7 @@ class NotificationService {
   Future<ApiResponse<NotificationResponseModel>> fetchNotifications({
     int page = 1,
     int limit = 10,
+    String type = 'general',
   }) async {
     try {
       final response = await _apiClient.get(
@@ -16,6 +17,7 @@ class NotificationService {
         queryParameters: {
           'page': page,
           'limit': limit,
+          'type': type,
         },
       );
 

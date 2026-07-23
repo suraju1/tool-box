@@ -33,6 +33,7 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
         tradeController.setLocation(
           locationController.latitude,
           locationController.longitude,
+          radius: locationController.radius,
         );
       }
 
@@ -57,6 +58,7 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
         context.read<TradeController>().setLocation(
               locationController.latitude,
               locationController.longitude,
+              radius: locationController.radius,
             );
         context.read<TradeController>().fetchHomePosts(refresh: true);
       });
@@ -129,12 +131,6 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
         return InkWell(
           onTap: () async {
             await WebLocationSelectionDialog.show(context);
-            if (!context.mounted) return;
-            context.read<TradeController>().setLocation(
-                  locationController.latitude,
-                  locationController.longitude,
-                );
-            context.read<TradeController>().fetchHomePosts();
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -154,7 +150,7 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        (locationController.label ?? 'LOCATION').toUpperCase(),
+                        locationController.headerBoldTitle,
                         style: TextStyle(
                           color: Theme.of(context).textTheme.bodyLarge?.color,
                           fontWeight: FontWeight.w700,
@@ -163,7 +159,7 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        locationController.address ?? 'Set your location',
+                        locationController.address != null ? locationController.headerAddressText : 'Set your location',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -250,10 +246,13 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
                         overlayShape:
                             const RoundSliderOverlayShape(overlayRadius: 16),
                       ),
-                      child: Slider(
-                        value: controller.distanceKm.clamp(0.01, 10.0),
-                        min: 0.01,
-                        max: 10.0,
+                      child: Builder(
+                        builder: (context) {
+                          double maxLim = controller.maxDistanceKm > 0.01 ? controller.maxDistanceKm : 10.0;
+                          return Slider(
+                            value: controller.distanceKm.clamp(0.01, maxLim),
+                            min: 0.01,
+                            max: maxLim,
                         activeColor:
                             Theme.of(context).brightness == Brightness.dark
                                 ? Colors.white
@@ -263,16 +262,18 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
                             Theme.of(context).brightness == Brightness.dark
                                 ? Colors.white
                                 : Colors.black87,
-                        onChanged: (val) {
-                          controller.setDistance(
-                            val,
-                            triggerFetch: true,
-                            fetchType: 'all',
-                          );
-                        },
+                          onChanged: (val) {
+                            controller.setDistance(
+                              val,
+                              triggerFetch: true,
+                              fetchType: 'all',
+                            );
+                          },
+                        );
+                      },
+                    ),
                       ),
                     ),
-                  ),
                   const SizedBox(width: 16),
                   SizedBox(
                     width: 55,
