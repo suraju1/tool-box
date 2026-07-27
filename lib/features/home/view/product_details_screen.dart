@@ -825,7 +825,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 children: [
                   if (post.distanceKm != null) ...[
                     TextSpan(
-                      text: '${post.distanceKm!.toStringAsFixed(1)} km ',
+                      text: post.distanceKm! < 1.0
+                          ? '${(post.distanceKm! * 1000).toInt()} mtrs '
+                          : '${post.distanceKm!.toStringAsFixed(1)} km ',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         color: context.textColor,

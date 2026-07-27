@@ -134,7 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(controller.errorMessage!),
                               ElevatedButton(
                                 onPressed: () => controller.fetchHomePosts(),
-                                child: Text(AppLocalizations.of(context)!.retry),
+                                child:
+                                    Text(AppLocalizations.of(context)!.retry),
                               ),
                             ],
                           ),
@@ -369,15 +370,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: Builder(
                       builder: (context) {
-                        double maxLim = controller.maxDistanceKm > 0.01 ? controller.maxDistanceKm : 10.0;
+                        double maxLim = controller.maxDistanceKm > 0.01
+                            ? controller.maxDistanceKm
+                            : 10.0;
                         return Slider(
                           padding: EdgeInsets.zero,
                           value: controller.distanceKm.clamp(0.01, maxLim),
                           min: 0.01,
                           max: maxLim,
-                      activeColor: context.primaryColor,
-                      inactiveColor: Colors.grey.shade200,
-                      thumbColor: context.primaryColor,
+                          activeColor: context.primaryColor,
+                          inactiveColor: Colors.grey.shade200,
+                          thumbColor: context.primaryColor,
                           onChanged: (val) {
                             controller.setDistance(
                               val,
@@ -440,7 +443,11 @@ class _HomeScreenState extends State<HomeScreen> {
         post.postType.toLowerCase() == 'taking';
     final authController = context.read<AuthController>();
     final isOwner = authController.currentUser?.id == post.userId;
-    final actionLabel = isOwner ? AppLocalizations.of(context)!.offersLabel : (isTake ? AppLocalizations.of(context)!.giveLabel : AppLocalizations.of(context)!.takeLabel);
+    final actionLabel = isOwner
+        ? AppLocalizations.of(context)!.offersLabel
+        : (isTake
+            ? AppLocalizations.of(context)!.giveLabel
+            : AppLocalizations.of(context)!.takeLabel);
 
     // Format exchange details dynamically
     Widget getExchangeInfo() {
@@ -482,9 +489,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       } else {
-        String text = '${AppLocalizations.of(context)!.inExchangeFor}₹${min?.toStringAsFixed(0) ?? 0} ${AppLocalizations.of(context)!.moneyLabel}';
+        String text =
+            '${AppLocalizations.of(context)!.inExchangeFor}₹${min?.toStringAsFixed(0) ?? 0} ${AppLocalizations.of(context)!.moneyLabel}';
         if (min != null && max != null && max != min) {
-          text = '${AppLocalizations.of(context)!.inExchangeFor}₹${min.toStringAsFixed(0)} - ₹${max.toStringAsFixed(0)} ${AppLocalizations.of(context)!.moneyLabel}';
+          text =
+              '${AppLocalizations.of(context)!.inExchangeFor}₹${min.toStringAsFixed(0)} - ₹${max.toStringAsFixed(0)} ${AppLocalizations.of(context)!.moneyLabel}';
         }
         return Text(
           text,
@@ -539,8 +548,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               isTake
-                                  ? AppLocalizations.of(context)!.userIsTaking((post.userName ?? 'User').split(' ').first)
-                                  : AppLocalizations.of(context)!.userIsGiving((post.userName ?? 'User').split(' ').first),
+                                  ? AppLocalizations.of(context)!.userIsTaking(
+                                      (post.userName ?? 'User')
+                                          .split(' ')
+                                          .first)
+                                  : AppLocalizations.of(context)!.userIsGiving(
+                                      (post.userName ?? 'User')
+                                          .split(' ')
+                                          .first),
                               style: TextStyle(
                                   color: Colors.grey, fontSize: 11.sp),
                               maxLines: 1,
@@ -570,17 +585,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           SizedBox(width: 4.w),
                           Builder(
                             builder: (context) {
-                              String distanceText = AppLocalizations.of(context)!.unknownDistanceAway;
+                              String distanceText =
+                                  AppLocalizations.of(context)!
+                                      .unknownDistanceAway;
                               if (post.distanceKm != null) {
                                 if (post.distanceKm! < 1.0) {
-                                  distanceText = '${(post.distanceKm! * 1000).toInt()} mtrs away';
+                                  distanceText =
+                                      '${(post.distanceKm! * 1000).toInt()} mtrs away';
                                 } else {
-                                  distanceText = AppLocalizations.of(context)!.kmAway(post.distanceKm!.toStringAsFixed(1));
+                                  distanceText = AppLocalizations.of(context)!
+                                      .kmAway(
+                                          post.distanceKm!.toStringAsFixed(1));
                                 }
                               }
                               return Text(
                                 distanceText,
-                                style: TextStyle(color: Colors.grey, fontSize: 11.sp),
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 11.sp),
                               );
                             },
                           ),
@@ -873,12 +894,14 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!isOwner)
             PopupMenuItem<String>(
               value: 'report',
-              child: Text(AppLocalizations.of(context)!.reportPost, style: TextStyle(color: Colors.red)),
+              child: Text(AppLocalizations.of(context)!.reportPost,
+                  style: TextStyle(color: Colors.red)),
             ),
           if (isOwner)
             PopupMenuItem<String>(
               value: 'delete',
-              child: Text(AppLocalizations.of(context)!.deletePost, style: TextStyle(color: Colors.red)),
+              child: Text(AppLocalizations.of(context)!.deletePost,
+                  style: TextStyle(color: Colors.red)),
             ),
         ];
       },

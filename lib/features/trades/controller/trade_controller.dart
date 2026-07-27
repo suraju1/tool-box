@@ -738,17 +738,16 @@ class TradeController extends ChangeNotifier {
       if (response.success) {
         _selectedPost = response.data;
         
-        // Preserve distanceKm from existing lists if backend detail API doesn't provide it
-        if (_selectedPost?.distanceKm == null) {
-          final existingPosts = [..._homePosts, ..._givePosts, ..._takePosts];
-          try {
-            final existingPost = existingPosts.firstWhere((p) => p.id == id);
-            if (existingPost.distanceKm != null) {
-              _selectedPost = _selectedPost?.copyWith(distanceKm: existingPost.distanceKm);
-            }
-          } catch (_) {
-            // Post not found in local lists, distanceKm remains null
+        // Always try to preserve distanceKm from existing lists since the list API
+        // correctly calculates it based on the user's location.
+        final existingPosts = [..._homePosts, ..._givePosts, ..._takePosts];
+        try {
+          final existingPost = existingPosts.firstWhere((p) => p.id == id);
+          if (existingPost.distanceKm != null) {
+            _selectedPost = _selectedPost?.copyWith(distanceKm: existingPost.distanceKm);
           }
+        } catch (_) {
+          // Post not found in local lists, keep the distance from detail API
         }
       } else {
         // Post not found (e.g. 404) or access denied - explicitly clear selectedPost
