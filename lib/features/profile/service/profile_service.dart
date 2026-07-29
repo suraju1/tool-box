@@ -496,7 +496,6 @@ class ProfileService {
     }
   }
 
-  /*
   Future<ApiResponse<dynamic>> saveUser(int userId) async {
     try {
       final response = await _apiClient.post(
@@ -520,7 +519,6 @@ class ProfileService {
       return ApiResponse(success: false, message: e.toString());
     }
   }
-  */
 
   Future<ApiResponse<dynamic>> unsaveUser(int userId) async {
     try {

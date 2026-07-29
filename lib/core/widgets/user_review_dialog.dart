@@ -24,12 +24,11 @@ class _UserReviewDialogState extends State<UserReviewDialog> {
   int? _selectedFeedbackIndex;
   final TextEditingController _reviewController = TextEditingController();
 
-  final List<Map<String, String>> _feedbackOptions = [
-    {'emoji': '😊', 'label': 'Friendly'},
-    {'emoji': '👍', 'label': 'Professional'},
-    {'emoji': '⏱️', 'label': 'Smooth'},
-    {'emoji': '😐', 'label': 'Average'},
-    {'emoji': '👎', 'label': 'Unpleasant'},
+  final List<Map<String, dynamic>> _feedbackOptions = [
+    {'icon': Icons.check_circle, 'color': Colors.green, 'label': 'Friendly'},
+    {'icon': Icons.check_circle, 'color': Colors.green, 'label': 'Professional'},
+    {'icon': Icons.cancel, 'color': Colors.red, 'label': 'Smooth'},
+    {'icon': Icons.cancel, 'color': Colors.red, 'label': 'Unpleasant'},
   ];
 
   @override
@@ -128,8 +127,11 @@ class _UserReviewDialogState extends State<UserReviewDialog> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(option['emoji']!,
-                                      style: const TextStyle(fontSize: 18.0)),
+                                  Icon(
+                                    option['icon'] as IconData,
+                                    color: option['color'] as Color,
+                                    size: 20.0,
+                                  ),
                                   const SizedBox(width: 8.0),
                                   Text(
                                     option['label']!,
@@ -156,14 +158,35 @@ class _UserReviewDialogState extends State<UserReviewDialog> {
                 const SizedBox(height: 24.0),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Optional Review',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.w700,
-                      color: context.textColor,
-                      fontFamily: FontFamily.openSans,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Review',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.w700,
+                          color: context.textColor,
+                          fontFamily: FontFamily.openSans,
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+                        decoration: BoxDecoration(
+                          color: context.isDarkMode ? Colors.white : Colors.black,
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        child: Text(
+                          'required*',
+                          style: TextStyle(
+                            fontSize: 10.0,
+                            fontWeight: FontWeight.bold,
+                            color: context.isDarkMode ? Colors.black : Colors.white,
+                            fontFamily: FontFamily.openSans,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12.0),
@@ -207,6 +230,12 @@ class _UserReviewDialogState extends State<UserReviewDialog> {
                                 if (_selectedFeedbackIndex == null) {
                                   ToastService.showErrorToast(
                                       context, 'Please select a label');
+                                  return;
+                                }
+
+                                if (_reviewController.text.trim().isEmpty) {
+                                  ToastService.showErrorToast(
+                                      context, 'Please enter a review');
                                   return;
                                 }
 

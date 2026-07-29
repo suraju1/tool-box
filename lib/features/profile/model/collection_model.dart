@@ -3,12 +3,14 @@ class CollectionModel {
   final String name;
   final int itemCount;
   final String createdAt;
+  final bool isMember;
 
   CollectionModel({
     required this.id,
     required this.name,
     required this.itemCount,
     required this.createdAt,
+    this.isMember = false,
   });
 
   factory CollectionModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class CollectionModel {
       name: json['name'] ?? '',
       itemCount: json['member_count'] ?? json['item_count'] ?? 0,
       createdAt: json['created_at'] ?? '',
+      isMember: json['is_member'] ?? false,
     );
   }
 
@@ -27,6 +30,7 @@ class CollectionModel {
       'item_count': itemCount,
       'member_count': itemCount,
       'created_at': createdAt,
+      'is_member': isMember,
     };
   }
 }

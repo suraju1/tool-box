@@ -57,21 +57,28 @@ class ReviewItemWidget extends StatelessWidget {
                   Row(
                     children: [
                       if (review.feedbackLabel != null) ...[
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 6.w, vertical: 2.h),
-                          decoration: BoxDecoration(
-                            color: context.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                          child: Text(
-                            review.feedbackLabel!,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: context.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final isPositive = review.feedbackLabel == 'Friendly' || review.feedbackLabel == 'Professional';
+                            return Row(
+                              children: [
+                                Icon(
+                                  isPositive ? Icons.check_circle : Icons.cancel,
+                                  color: isPositive ? Colors.green : Colors.red,
+                                  size: 16.sp,
+                                ),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  review.feedbackLabel!,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: context.textColor,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ],

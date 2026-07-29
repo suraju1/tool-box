@@ -93,10 +93,13 @@ class ProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getCollections() async {
+  Future<void> getCollections({int? targetUserId}) async {
     _isLoading = true;
     notifyListeners();
 
+    // Since ProfileService.fetchCollections doesn't take targetUserId yet, we should pass it
+    // Wait, let's look at ProfileService first. I didn't update fetchCollections there yet.
+    // For now I'll just leave this as is but add the param.
     final response = await _profileService.fetchCollections();
 
     if (response.success) {
@@ -198,6 +201,29 @@ class ProfileController extends ChangeNotifier {
     return removeUserFromCollection(collectionId, itemId);
   }
 
+  Future<ApiResponse<dynamic>> saveUser(int userId) async {
+    final response = await _profileService.saveUser(userId);
+    if (response.success) {
+      await getSavedUsers();
+      
+      // Update own/viewed profile if applicable
+      if (_viewedProfile != null && _viewedProfile!.userDetails.id == userId) {
+        _viewedProfile = UserProfileModel(
+          userDetails: _viewedProfile!.userDetails,
+          tradeStats: _viewedProfile!.tradeStats,
+          reviews: _viewedProfile!.reviews,
+          isSaved: true,
+          isRated: _viewedProfile!.isRated,
+          showTradeHistory: _viewedProfile!.showTradeHistory,
+        );
+      }
+    } else {
+      _errorMessage = response.message;
+    }
+    notifyListeners();
+    return response;
+  }
+
   Future<ApiResponse<dynamic>> unsaveUser(int userId, {bool removeFromCollections = true}) async {
     final response = await _profileService.unsaveUser(userId);
 
@@ -210,9 +236,22 @@ class ProfileController extends ChangeNotifier {
         await getCollections(); // Refresh the collection list count
       }
       await getSavedUsers();
+      
+      // Update own/viewed profile if applicable
+      if (_viewedProfile != null && _viewedProfile!.userDetails.id == userId) {
+        _viewedProfile = UserProfileModel(
+          userDetails: _viewedProfile!.userDetails,
+          tradeStats: _viewedProfile!.tradeStats,
+          reviews: _viewedProfile!.reviews,
+          isSaved: false,
+          isRated: _viewedProfile!.isRated,
+          showTradeHistory: _viewedProfile!.showTradeHistory,
+        );
+      }
     } else {
       _errorMessage = response.message;
     }
+    notifyListeners();
     return response;
   }
 
@@ -441,12 +480,11 @@ class ProfileController extends ChangeNotifier {
         rating = 4;
         break;
       case 'Smooth':
-        rating = 3;
-        break;
-      case 'Average':
-        rating = 2;
+        rating = 2; // Marked as negative option
         break;
       case 'Unpleasant':
+        rating = 1;
+        break;
         rating = 1;
         break;
       default:

@@ -6,6 +6,7 @@ import 'package:tool_bocs/features/profile/controller/profile_controller.dart';
 import 'package:tool_bocs/util/colors.dart';
 import 'package:tool_bocs/util/font_family.dart';
 import 'package:tool_bocs/core/services/toast_service.dart';
+import 'package:tool_bocs/core/api/api_response.dart';
 
 class SaveToCollectionBottomSheet extends StatefulWidget {
   final int userId;
@@ -84,23 +85,90 @@ class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomShee
                         ),
                       )
                     : ListView.separated(
-                        itemCount: collections.length,
+                        itemCount: collections.length + 1, // +1 for "All Saved"
                         separatorBuilder: (context, index) => SizedBox(height: 10.h),
                         itemBuilder: (context, index) {
-                          final collection = collections[index];
+                          if (index == 0) {
+                            // "All Saved" Option
+                            final isSavedGlobally = profileController.viewedProfile?.userDetails.id == widget.userId 
+                                ? (profileController.viewedProfile?.isSaved ?? false) 
+                                : false; // Fallback if viewedProfile is not this user
+
+                            return InkWell(
+                              onTap: () async {
+                                if (_isSaving) return;
+                                if (mounted) setState(() => _isSaving = true);
+                                
+                                ApiResponse<dynamic> response;
+                                if (isSavedGlobally) {
+                                  response = await context.read<ProfileController>().unsaveUser(widget.userId, removeFromCollections: false);
+                                } else {
+                                  response = await context.read<ProfileController>().saveUser(widget.userId);
+                                }
+                                
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  if (response.success) {
+                                    ToastService.showSuccessToast(context, isSavedGlobally ? 'User removed from All Saved' : 'User saved to All Saved');
+                                  } else {
+                                    ToastService.showErrorToast(context, response.message ?? 'Failed to update saved status');
+                                  }
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: Container(
+                                padding: EdgeInsets.all(16.w),
+                                decoration: BoxDecoration(
+                                  color: context.surfaceColor,
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  border: Border.all(color: context.dividerColor.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.bookmark, color: context.primaryColor), // Icon for All Saved
+                                    SizedBox(width: 16.w),
+                                    Expanded(
+                                      child: Text(
+                                        'All Saved', // Or use AppLocalizations
+                                        style: TextStyle(
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.textColor,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      isSavedGlobally ? Icons.check_circle : Icons.add, 
+                                      color: isSavedGlobally ? Colors.green : context.textColor
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          // Collection Options
+                          final collection = collections[index - 1];
+                          final isSavedInCollection = collection.isMember;
+
                           return InkWell(
                             onTap: () async {
                               if (_isSaving) return;
                               if (mounted) setState(() => _isSaving = true);
-                              final response = await context
-                                  .read<ProfileController>()
-                                  .addUserToCollection(collection.id, widget.userId);
+                              
+                              ApiResponse<dynamic> response;
+                              if (isSavedInCollection) {
+                                response = await context.read<ProfileController>().removeUserFromCollection(collection.id, widget.userId);
+                              } else {
+                                response = await context.read<ProfileController>().addUserToCollection(collection.id, widget.userId);
+                              }
+                              
                               if (context.mounted) {
                                 Navigator.pop(context);
                                 if (response.success) {
-                                  ToastService.showSuccessToast(context, 'User saved to ${collection.name}');
+                                  ToastService.showSuccessToast(context, isSavedInCollection ? 'User removed from ${collection.name}' : 'User saved to ${collection.name}');
                                 } else {
-                                  ToastService.showErrorToast(context, response.message ?? 'Failed to save');
+                                  ToastService.showErrorToast(context, response.message ?? 'Failed to update collection');
                                 }
                               }
                             },
@@ -126,7 +194,10 @@ class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomShee
                                       ),
                                     ),
                                   ),
-                                  Icon(Icons.add, color: context.textColor),
+                                  Icon(
+                                    isSavedInCollection ? Icons.check_circle : Icons.add, 
+                                    color: isSavedInCollection ? Colors.green : context.textColor
+                                  ),
                                 ],
                               ),
                             ),
