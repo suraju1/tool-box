@@ -514,54 +514,65 @@ class _WebChatScreenState extends State<WebChatScreen> {
       }
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: context.isDarkMode ? Colors.white10 : const Color(0xFFF8FAFC),
-        border: Border(
-            bottom: BorderSide(
-                color: context.dividerColor.withOpacity(0.5), width: 1)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-                color: context.primaryColor.withOpacity(0.1),
-                shape: BoxShape.circle),
-            child:
-                Icon(Icons.swap_horiz, color: context.primaryColor, size: 24),
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => UserReviewDialog(
+            userId: int.tryParse(widget.otherUserId ?? '0') ?? 0,
+            userName: otherUserName,
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                    fontSize: 15,
-                    color: context.textColor,
-                    fontFamily: FontFamily.openSans,
-                    height: 1.5),
-                children: [
-                  TextSpan(text: AppLocalizations.of(context)!.youChose),
-                  TextSpan(
-                      text: AppLocalizations.of(context)!
-                          .givingTo(givingItem, otherUserName),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: context.primaryColor)),
-                  TextSpan(text: AppLocalizations.of(context)!.andWord),
-                  TextSpan(
-                      text: AppLocalizations.of(context)!.taking(takingItem),
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: context.primaryColor)),
-                  TextSpan(text: AppLocalizations.of(context)!.inReturn),
-                ],
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: context.isDarkMode ? Colors.white10 : const Color(0xFFF8FAFC),
+          border: Border(
+              bottom: BorderSide(
+                  color: context.dividerColor.withOpacity(0.5), width: 1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: context.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle),
+              child:
+                  Icon(Icons.swap_horiz, color: context.primaryColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: context.textColor,
+                      fontFamily: FontFamily.openSans,
+                      height: 1.5),
+                  children: [
+                    TextSpan(text: AppLocalizations.of(context)!.youChose),
+                    TextSpan(
+                        text: AppLocalizations.of(context)!
+                            .givingTo(givingItem, otherUserName),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: context.primaryColor)),
+                    TextSpan(text: AppLocalizations.of(context)!.andWord),
+                    TextSpan(
+                        text: AppLocalizations.of(context)!.taking(takingItem),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: context.primaryColor)),
+                    TextSpan(text: AppLocalizations.of(context)!.inReturn),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

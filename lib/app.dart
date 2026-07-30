@@ -28,6 +28,7 @@ class ToolUcsApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeController.themeMode,
+        themeAnimationDuration: Duration.zero,
         scrollBehavior: const MaterialScrollBehavior().copyWith(
           dragDevices: {
             // Support drag scrolling on desktop/web

@@ -551,7 +551,7 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: reviews.length > 5 ? 5 : reviews.length,
-              separatorBuilder: (_, __) => const Divider(height: 32),
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) =>
                   _buildWebReviewItem(context, reviews[index]),
             ),
@@ -584,74 +584,57 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
   }
 
   Widget _buildWebReviewItem(BuildContext context, Review review) {
-    return InkWell(
-      onTap: () {
-        if (review.reviewerId != null) {
-          ProfileController.navigateToUserProfile(context, review.reviewerId!);
-        }
-      },
-      hoverColor: Colors.transparent,
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isPositive = (review.userReaction ?? '').toLowerCase() != 'dislike' &&
+        (review.rating is int
+            ? review.rating as int
+            : int.tryParse(review.rating.toString()) ?? 0) >= 3;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: greyColor.withOpacity(0.2)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
+              color: isPositive ? const Color(0xFF65B741) : Colors.red,
               shape: BoxShape.circle,
-              border: Border.all(color: context.dividerColor, width: 1),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: AppCachedImage(
-                imageUrl: review.reviewerImage ?? '',
-                userName: review.reviewerName,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                radius: 24,
-              ),
-            ),
+            child: Icon(isPositive ? Icons.check : Icons.close,
+                color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  review.reviewerName ?? 'User',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: context.textColor),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        review.feedbackLabel ?? "Review",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                if (review.feedbackLabel != null) ...[
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: context.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      review.feedbackLabel!,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: context.primaryColor,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                const SizedBox(height: 4),
                 Text(
                   review.comment?.isNotEmpty == true
-                      ? review.comment!
-                      : 'No message provided',
+                      ? "- ${review.comment}"
+                      : "- No comments",
                   style: TextStyle(
-                      fontSize: 15,
-                      color: Theme.of(context).brightness == Brightness.dark
+                      color: isDark
                           ? Colors.grey.shade400
-                          : Colors.grey.shade700,
-                      height: 1.5),
+                          : Colors.grey.shade500,
+                      fontSize: 12),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -669,25 +652,17 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: review.userReaction == 'like'
-                              ? (Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black)
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           border: Border.all(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black),
+                              color: isDark ? Colors.white : Colors.black),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text("True: ${review.likesCount}",
                             style: TextStyle(
                                 color: review.userReaction == 'like'
-                                    ? (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.black
-                                        : Colors.white)
-                                    : (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.white
-                                        : Colors.black),
+                                    ? (isDark ? Colors.black : Colors.white)
+                                    : (isDark ? Colors.white : Colors.black),
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold)),
                       ),
@@ -703,34 +678,26 @@ class _WebUserProfileScreenState extends State<WebUserProfileScreen> {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: review.userReaction == 'dislike'
-                              ? (Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black)
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           border: Border.all(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black),
+                              color: isDark ? Colors.white : Colors.black),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text("False: ${review.dislikesCount}",
                             style: TextStyle(
                                 color: review.userReaction == 'dislike'
-                                    ? (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.black
-                                        : Colors.white)
-                                    : (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.white
-                                        : Colors.black),
+                                    ? (isDark ? Colors.black : Colors.white)
+                                    : (isDark ? Colors.white : Colors.black),
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
-                ),
+                )
               ],
             ),
-          ),
+          )
         ],
       ),
     );

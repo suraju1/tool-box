@@ -159,6 +159,12 @@ class WebAllReviewsScreen extends StatelessWidget {
   }
 
   Widget _buildReviewItem(BuildContext context, Review review) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isPositive = (review.userReaction ?? '').toLowerCase() != 'dislike' &&
+        (review.rating is int
+            ? review.rating as int
+            : int.tryParse(review.rating.toString()) ?? 0) >= 3;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(24),
@@ -175,109 +181,45 @@ class WebAllReviewsScreen extends StatelessWidget {
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            onTap: () {
-              if (review.reviewerId != null) {
-                ProfileController.navigateToUserProfile(
-                    context, review.reviewerId!);
-              }
-            },
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: context.primaryColor.withOpacity(0.1), width: 1),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: AppCachedImage(
-                  imageUrl: review.reviewerImage ?? '',
-                  userName: review.reviewerName,
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                  radius: 30,
-                ),
-              ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isPositive ? const Color(0xFF65B741) : Colors.red,
+              shape: BoxShape.circle,
             ),
+            child: Icon(isPositive ? Icons.check : Icons.close,
+                color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  onTap: () {
-                    if (review.reviewerId != null) {
-                      ProfileController.navigateToUserProfile(
-                          context, review.reviewerId!);
-                    }
-                  },
-                  child: Text(
-                    review.reviewerName ?? 'User',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: List.generate(
-                        5,
-                        (index) {
-                          final ratingValue = review.rating is int
-                              ? review.rating
-                              : int.tryParse(review.rating.toString()) ?? 0;
-                          return Icon(
-                            index < ratingValue
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: index < ratingValue
-                                ? Colors.amber
-                                : Colors.grey.shade400,
-                            size: 16,
-                          );
-                        },
+                    Expanded(
+                      child: Text(
+                        review.feedbackLabel ?? "Review",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
-                    if (review.feedbackLabel != null) ...[
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: context.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          review.feedbackLabel!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
-                const SizedBox(height: 12),
-                if (review.comment != null && review.comment!.isNotEmpty)
-                  Text(
-                    review.comment!,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.grey.shade700,
-                      height: 1.4,
-                    ),
-                  ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Text(
+                  review.comment?.isNotEmpty == true
+                      ? "- ${review.comment}"
+                      : "- No comments",
+                  style: TextStyle(
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade500,
+                      fontSize: 14),
+                ),
+                const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -293,26 +235,18 @@ class WebAllReviewsScreen extends StatelessWidget {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: review.userReaction == 'like'
-                              ? (Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black)
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           border: Border.all(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black),
+                              color: isDark ? Colors.white : Colors.black),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text("True: ${review.likesCount}",
                             style: TextStyle(
                                 color: review.userReaction == 'like'
-                                    ? (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.black
-                                        : Colors.white)
-                                    : (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.white
-                                        : Colors.black),
-                                fontSize: 10,
+                                    ? (isDark ? Colors.black : Colors.white)
+                                    : (isDark ? Colors.white : Colors.black),
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -327,34 +261,26 @@ class WebAllReviewsScreen extends StatelessWidget {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: review.userReaction == 'dislike'
-                              ? (Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black)
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           border: Border.all(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black),
+                              color: isDark ? Colors.white : Colors.black),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text("False: ${review.dislikesCount}",
                             style: TextStyle(
                                 color: review.userReaction == 'dislike'
-                                    ? (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.black
-                                        : Colors.white)
-                                    : (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.white
-                                        : Colors.black),
-                                fontSize: 10,
+                                    ? (isDark ? Colors.black : Colors.white)
+                                    : (isDark ? Colors.white : Colors.black),
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
-                ),
+                )
               ],
             ),
-          ),
+          )
         ],
       ),
     );

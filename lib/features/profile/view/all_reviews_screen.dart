@@ -86,7 +86,7 @@ class AllReviewsScreen extends StatelessWidget {
                     padding: EdgeInsets.all(16.w),
                     itemCount: reviews.length,
                     separatorBuilder: (context, index) =>
-                        Divider(color: context.dividerColor),
+                        SizedBox(height: 12.h),
                     itemBuilder: (context, index) =>
                         ReviewItemWidget(review: reviews[index]),
                   ),

@@ -643,7 +643,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 itemCount: reviews.length > 3 ? 3 : reviews.length,
-                separatorBuilder: (_, __) => Divider(color: context.dividerColor),
+                separatorBuilder: (_, __) => SizedBox(height: 12.h),
                 itemBuilder: (context, index) => ReviewItemWidget(review: reviews[index]),
               ),
             ),

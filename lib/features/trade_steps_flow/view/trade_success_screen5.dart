@@ -22,31 +22,9 @@ class _TradeSuccessScreenState extends State<TradeSuccessScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showReviewDialog();
-    });
   }
 
-  void _showReviewDialog() {
-    final tradeController = context.read<TradeController>();
-    final authController = context.read<AuthController>();
-    final response = tradeController.selectedResponse;
-    if (response == null) return;
 
-    final isOwner = authController.currentUser?.id == response.posterUserId;
-    final otherUserId = isOwner ? response.responderId : response.posterUserId;
-    final otherUserName = isOwner ? response.responderName : response.posterName;
-
-    if (otherUserId != null) {
-      showDialog(
-        context: context,
-        builder: (context) => UserReviewDialog(
-          userId: int.tryParse(otherUserId.toString()) ?? 0,
-          userName: otherUserName ?? 'User',
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

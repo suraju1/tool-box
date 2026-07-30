@@ -571,10 +571,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.tradeDetails,
-          arguments: trade.id,
+        showDialog(
+          context: context,
+          builder: (context) => UserReviewDialog(
+            userId: int.tryParse(widget.otherUserId ?? '0') ?? 0,
+            userName: otherUserName,
+          ),
         );
       },
       child: Container(
