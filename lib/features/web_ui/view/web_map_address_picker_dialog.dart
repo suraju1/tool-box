@@ -95,9 +95,33 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   void _initEditAddress() {
     final addr = widget.editAddress!;
     _lastMapPosition = LatLng(addr.latitude, addr.longitude);
-    _currentAddress = addr.address;
-    _areaController.text = addr.address;
-    _selectedLabel = addr.label;
+    
+    String parsedAddress = addr.address;
+
+    final validLabels = ['Home', 'Work', 'Office', 'Hotel', 'Other'];
+
+    // Find matching label case-insensitively
+    String? matchedLabel;
+    for (var l in validLabels) {
+      if (l.toLowerCase() == addr.label.toLowerCase()) {
+        matchedLabel = l;
+        break;
+      }
+    }
+
+    if (matchedLabel != null && matchedLabel != 'Other') {
+      _selectedLabel = matchedLabel;
+    } else {
+      _selectedLabel = 'Other';
+      if (parsedAddress.contains(' - ')) {
+        final idx = parsedAddress.indexOf(' - ');
+        _customLabelController.text = parsedAddress.substring(0, idx).trim();
+        parsedAddress = parsedAddress.substring(idx + 3).trim();
+      }
+    }
+
+    _currentAddress = parsedAddress;
+    _areaController.text = parsedAddress;
 
     double? savedRadius = addr.radius;
     if (addr.id != null) {
@@ -108,7 +132,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
     _radius = savedRadius ?? 10.0;
     _currentZoom = _getZoomForRadius(_radius);
 
-    final parts = addr.address.split(', ');
+    final parts = parsedAddress.split(', ');
     if (parts.length >= 2) {
       _houseController.text = parts[0];
       if (parts.length >= 3) {

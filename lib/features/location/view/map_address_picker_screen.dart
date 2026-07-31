@@ -77,17 +77,8 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   void _initEditAddress() {
     final addr = widget.editAddress!;
     _lastMapPosition = LatLng(addr.latitude, addr.longitude);
-    _currentAddress = addr.address;
-    _areaController.text = addr.address;
-
-    double? savedRadius = addr.radius;
-    if (addr.id != null) {
-      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.id!.toString());
-    } else {
-      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.address.trim());
-    }
-    _radius = savedRadius ?? 10.0;
-    _currentZoom = _getZoomForRadius(_radius);
+    
+    String parsedAddress = addr.address;
 
     final validLabels = ['Home', 'Work', 'Office', 'Hotel', 'Other'];
 
@@ -104,11 +95,28 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       _selectedLabel = matchedLabel;
     } else {
       _selectedLabel = 'Other';
+      if (parsedAddress.contains(' - ')) {
+        final idx = parsedAddress.indexOf(' - ');
+        _customLabelController.text = parsedAddress.substring(0, idx).trim();
+        parsedAddress = parsedAddress.substring(idx + 3).trim();
+      }
     }
+
+    _currentAddress = parsedAddress;
+    _areaController.text = parsedAddress;
+
+    double? savedRadius = addr.radius;
+    if (addr.id != null) {
+      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.id!.toString());
+    } else {
+      savedRadius = savedRadius ?? LocalLocationService.getAddressRadius(addr.address.trim());
+    }
+    _radius = savedRadius ?? 10.0;
+    _currentZoom = _getZoomForRadius(_radius);
 
     // Try to parse house/floor if they were saved in the address string
     // This is simple logic, might not be perfect depending on how it was saved
-    final parts = addr.address.split(', ');
+    final parts = parsedAddress.split(', ');
     if (parts.length >= 2) {
       _houseController.text = parts[0];
       if (parts.length >= 3) {

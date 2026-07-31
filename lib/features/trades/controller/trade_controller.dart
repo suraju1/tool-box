@@ -679,7 +679,55 @@ class TradeController extends ChangeNotifier {
       );
 
       if (response.success) {
-        final List<PostModel> newPosts = response.data ?? [];
+        final List<PostModel> fetchedPosts = response.data ?? [];
+        final List<PostModel> newPosts = fetchedPosts.map<PostModel>((post) {
+          if (type == 'give' && post.postType == 'take') {
+            final isMoneyReturn = post.returnType.toLowerCase() == 'price' || post.returnType.toLowerCase() == 'money';
+            final newItemName = isMoneyReturn ? (post.priceMin == post.priceMax ? '₹${post.priceMin}' : '₹${post.priceMin} - ₹${post.priceMax}') : (post.returnItemName ?? post.itemName);
+            final newItemCategory = isMoneyReturn ? 'Money' : (post.returnItemCategory ?? post.itemCategory);
+            final newItemImages = isMoneyReturn ? ['assets/money_placeholder.png'] : (post.returnItemImages.isNotEmpty ? post.returnItemImages : post.itemImages);
+            
+            return post.copyWith(
+              itemName: newItemName,
+              itemCategory: newItemCategory,
+              itemCondition: post.returnItemCondition ?? post.itemCondition,
+              itemNote: post.returnItemDescription ?? post.itemNote,
+              itemSource: post.returnItemSource ?? post.itemSource,
+              itemImages: newItemImages,
+              returnItemName: post.itemName,
+              returnItemCategory: post.itemCategory,
+              returnItemCondition: post.itemCondition,
+              returnItemDescription: post.itemNote,
+              returnItemSource: post.itemSource,
+              returnItemImages: post.itemImages,
+              postType: 'give',
+              returnType: 'Item',
+            );
+          } else if (type == 'take' && post.postType == 'give') {
+            final isMoneyReturn = post.returnType.toLowerCase() == 'price' || post.returnType.toLowerCase() == 'money';
+            final newItemName = isMoneyReturn ? (post.priceMin == post.priceMax ? '₹${post.priceMin}' : '₹${post.priceMin} - ₹${post.priceMax}') : (post.returnItemName ?? post.itemName);
+            final newItemCategory = isMoneyReturn ? 'Money' : (post.returnItemCategory ?? post.itemCategory);
+            final newItemImages = isMoneyReturn ? ['assets/money_placeholder.png'] : (post.returnItemImages.isNotEmpty ? post.returnItemImages : post.itemImages);
+            
+            return post.copyWith(
+              itemName: newItemName,
+              itemCategory: newItemCategory,
+              itemCondition: post.returnItemCondition ?? post.itemCondition,
+              itemNote: post.returnItemDescription ?? post.itemNote,
+              itemSource: post.returnItemSource ?? post.itemSource,
+              itemImages: newItemImages,
+              returnItemName: post.itemName,
+              returnItemCategory: post.itemCategory,
+              returnItemCondition: post.itemCondition,
+              returnItemDescription: post.itemNote,
+              returnItemSource: post.itemSource,
+              returnItemImages: post.itemImages,
+              postType: 'take',
+              returnType: 'Item',
+            );
+          }
+          return post;
+        }).toList();
         bool next = true;
         int nextPage = currentPage;
 

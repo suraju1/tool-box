@@ -79,6 +79,19 @@ class AppCachedImage extends StatelessWidget {
       return _buildErrorWidget(context);
     }
 
+    if (imageUrl.startsWith('assets/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Image.asset(
+          imageUrl,
+          height: height,
+          width: width,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => _buildErrorWidget(context),
+        ),
+      );
+    }
+
     final absoluteUrl = getFormattedUrl(imageUrl);
     final pixelRatio = MediaQuery.of(context).devicePixelRatio;
 
