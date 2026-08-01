@@ -31,7 +31,7 @@ class _WebSaveToCollectionDialogState extends State<WebSaveToCollectionDialog> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileController>().getCollections();
+      context.read<ProfileController>().getCollections(targetUserId: widget.userId);
     });
   }
 

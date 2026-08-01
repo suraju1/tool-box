@@ -574,9 +574,13 @@ class ProfileService {
     }
   }
 
-  Future<ApiResponse<List<CollectionModel>>> fetchCollections() async {
+  Future<ApiResponse<List<CollectionModel>>> fetchCollections({int? targetUserId}) async {
     try {
-      final response = await _apiClient.get(ApiConstants.listCollections);
+      String url = ApiConstants.listCollections;
+      if (targetUserId != null) {
+        url += '?target_user_id=$targetUserId';
+      }
+      final response = await _apiClient.get(url);
 
       if (response.statusCode == 200) {
         final data = response.data;

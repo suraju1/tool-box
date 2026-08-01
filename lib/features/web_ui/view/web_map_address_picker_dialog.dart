@@ -13,6 +13,8 @@ import 'package:tool_bocs/core/services/toast_service.dart';
 import 'package:tool_bocs/features/address/controller/address_controller.dart';
 import 'package:tool_bocs/features/address/model/address_model.dart';
 import 'dart:math' as math;
+import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 
 class WebMapAddressPickerDialog extends StatefulWidget {
@@ -46,6 +48,11 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
   String _currentAddress = "Loading address...";
   bool _isReverseGeocoding = false;
   bool _isPanning = false;
+
+  // Autocomplete
+  List<Map<String, String>> _autocompleteSuggestions = [];
+  Timer? _debounce;
+  String _sessionToken = const Uuid().v4();
 
   // Form controllers
   final TextEditingController _houseController = TextEditingController();
@@ -84,6 +91,7 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _houseController.dispose();
     _floorController.dispose();
     _areaController.dispose();
@@ -266,8 +274,12 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
 
   Future<void> _searchLocation(String query) async {
     if (query.isEmpty) return;
-
-    setState(() => _isReverseGeocoding = true);
+    setState(() {
+      _isReverseGeocoding = true;
+      _autocompleteSuggestions = []; // Hide suggestions when searching
+    });
+    // Reset session token for the next search
+    _sessionToken = const Uuid().v4();
 
     try {
       // 1. Try standard geocoding first (works best on mobile)
@@ -598,52 +610,116 @@ class _WebMapAddressPickerDialogState extends State<WebMapAddressPickerDialog> {
     );
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (query.isEmpty) {
+        if (mounted) setState(() => _autocompleteSuggestions = []);
+        return;
+      }
+      final suggestions = await LocationService.getAutocompleteSuggestions(query, sessionToken: _sessionToken);
+      if (mounted) {
+        setState(() {
+          _autocompleteSuggestions = suggestions;
+        });
+      }
+    });
+  }
+
   Widget _buildSearchOverlay() {
     return Positioned(
       top: 10,
       left: 16,
       right: 16,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: context.onPrimaryColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: context.isDarkMode ? Colors.black45 : Colors.black12,
-                blurRadius: 10)
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Icon(Icons.search, color: context.primaryColor),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _mapSearchController,
-                decoration: InputDecoration(
-                  hintText: 'Search for area, locality...',
-                  hintStyle:
-                      TextStyle(color: context.subTextColor, fontSize: 14),
-                  border: InputBorder.none,
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: context.onPrimaryColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: context.isDarkMode ? Colors.black45 : Colors.black12,
+                    blurRadius: 10)
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: context.primaryColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _mapSearchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search for area, locality...',
+                      hintStyle:
+                          TextStyle(color: context.subTextColor, fontSize: 14),
+                      border: InputBorder.none,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (value) => _searchLocation(value),
+                    onChanged: (val) {
+                      setState(() {});
+                      _onSearchChanged(val);
+                    },
+                  ),
                 ),
-                textInputAction: TextInputAction.search,
-                onSubmitted: (value) => _searchLocation(value),
-                onChanged: (val) => setState(() {}),
+                if (_mapSearchController.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _mapSearchController.clear();
+                        _autocompleteSuggestions = [];
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+          if (_autocompleteSuggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              constraints: const BoxConstraints(maxHeight: 250),
+              decoration: BoxDecoration(
+                color: context.onPrimaryColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                      color: context.isDarkMode ? Colors.black45 : Colors.black12,
+                      blurRadius: 10)
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _autocompleteSuggestions.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final suggestion = _autocompleteSuggestions[index];
+                    return ListTile(
+                      leading: Icon(Icons.location_on_outlined, color: context.primaryColor),
+                      title: Text(
+                        suggestion['description'] ?? '',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _mapSearchController.text = suggestion['description'] ?? '';
+                          _autocompleteSuggestions = [];
+                        });
+                        _searchLocation(suggestion['description'] ?? '');
+                      },
+                    );
+                  },
+                ),
               ),
             ),
-            if (_mapSearchController.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    _mapSearchController.clear();
-                  });
-                },
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }

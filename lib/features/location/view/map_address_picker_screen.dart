@@ -14,6 +14,7 @@ import 'package:tool_bocs/features/address/model/address_model.dart';
 import 'dart:math' as math;
 import 'package:geocoding/geocoding.dart' as geo;
 import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
 
 class MapAddressPickerScreen extends StatefulWidget {
   final bool isPickOnly;
@@ -26,7 +27,7 @@ class MapAddressPickerScreen extends StatefulWidget {
   State<MapAddressPickerScreen> createState() => _MapAddressPickerScreenState();
 }
 
-class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
+class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> with WidgetsBindingObserver {
   final Completer<GoogleMapController> _controller = Completer();
   LatLng _lastMapPosition = const LatLng(18.5204, 73.8567); // Default Pune
   String _currentAddress = "Loading address...";
@@ -58,10 +59,29 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   bool _isPanning = false;
   bool _isFetchingLocation = false;
   bool _isSaving = false;
+  bool _isSystemLocationEnabled = true;
+  StreamSubscription<ServiceStatus>? _serviceStatusStreamSubscription;
+
+  // Autocomplete
+  List<Map<String, String>> _autocompleteSuggestions = [];
+  Timer? _debounce;
+  String _sessionToken = const Uuid().v4();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkSystemLocation();
+    
+    // Listen for real-time location service status changes (e.g. from quick settings toggle)
+    _serviceStatusStreamSubscription = Geolocator.getServiceStatusStream().listen((ServiceStatus status) {
+      if (mounted) {
+        setState(() {
+          _isSystemLocationEnabled = status == ServiceStatus.enabled;
+        });
+      }
+    });
+
     if (widget.initialRadius != null) {
       _radius = widget.initialRadius!;
     }
@@ -71,6 +91,35 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
       _initEditAddress();
     } else {
       _initLocation();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _serviceStatusStreamSubscription?.cancel();
+    _debounce?.cancel();
+    _houseController.dispose();
+    _floorController.dispose();
+    _areaController.dispose();
+    _mapSearchController.dispose();
+    _customLabelController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkSystemLocation();
+    }
+  }
+
+  Future<void> _checkSystemLocation() async {
+    bool serviceEnabled = await LocationService.isLocationServiceEnabled();
+    if (mounted) {
+      setState(() {
+        _isSystemLocationEnabled = serviceEnabled;
+      });
     }
   }
 
@@ -187,6 +236,47 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
         }
       }
       return;
+    }
+    bool hasPermission = await LocationService.checkPermission();
+    if (!hasPermission) {
+      hasPermission = await LocationService.requestPermission();
+      if (!hasPermission) {
+        if (mounted) {
+          setState(() => _isFetchingLocation = false);
+          bool? openSettings = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Text(
+                  'Location Permission',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                content: Text('Location permission is denied. Please enable it in app settings to fetch your current location.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.primaryColor,
+                      foregroundColor: context.onPrimaryColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text('Open Settings'),
+                  ),
+                ],
+              );
+            },
+          );
+          if (openSettings == true) {
+            await Geolocator.openAppSettings();
+          }
+        }
+        return;
+      }
     }
 
     final success = await context.read<LocationController>().fetchLocation();
@@ -547,52 +637,117 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
     );
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (query.isEmpty) {
+        if (mounted) setState(() => _autocompleteSuggestions = []);
+        return;
+      }
+      final suggestions = await LocationService.getAutocompleteSuggestions(query, sessionToken: _sessionToken);
+      if (mounted) {
+        setState(() {
+          _autocompleteSuggestions = suggestions;
+        });
+      }
+    });
+  }
+
   Widget _buildSearchOverlay() {
     return Positioned(
       top: 10.h,
       left: 16.w,
       right: 16.w,
-      child: Container(
-        height: 50.h,
-        decoration: BoxDecoration(
-          color: context.onPrimaryColor,
-          borderRadius: BorderRadius.circular(12.r),
-          boxShadow: [
-            BoxShadow(
-                color: context.isDarkMode ? Colors.black45 : Colors.black12,
-                blurRadius: 10)
-          ],
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: Row(
-          children: [
-            Icon(Icons.search, color: context.primaryColor),
-            SizedBox(width: 10.w),
-            Expanded(
-              child: TextField(
-                controller: _mapSearchController,
-                decoration: InputDecoration(
-                  hintText: 'Search for area, locality...',
-                  hintStyle:
-                      TextStyle(color: context.subTextColor, fontSize: 14.sp),
-                  border: InputBorder.none,
+      child: Column(
+        children: [
+          Container(
+            height: 50.h,
+            decoration: BoxDecoration(
+              color: context.onPrimaryColor,
+              borderRadius: BorderRadius.circular(12.r),
+              boxShadow: [
+                BoxShadow(
+                    color: context.isDarkMode ? Colors.black45 : Colors.black12,
+                    blurRadius: 10)
+              ],
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Row(
+              children: [
+                Icon(Icons.search, color: context.primaryColor),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: TextField(
+                    controller: _mapSearchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search for area, locality...',
+                      hintStyle:
+                          TextStyle(color: context.subTextColor, fontSize: 14.sp),
+                      border: InputBorder.none,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (value) => _searchLocation(value),
+                    onChanged: (val) {
+                      setState(() {});
+                      _onSearchChanged(val);
+                    },
+                  ),
                 ),
-                textInputAction: TextInputAction.search,
-                onSubmitted: (value) => _searchLocation(value),
-                onChanged: (val) => setState(() {}),
+                if (_mapSearchController.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _mapSearchController.clear();
+                        _autocompleteSuggestions = [];
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+          if (_autocompleteSuggestions.isNotEmpty)
+            Container(
+              margin: EdgeInsets.only(top: 8.h),
+              constraints: BoxConstraints(maxHeight: 250.h),
+              decoration: BoxDecoration(
+                color: context.onPrimaryColor,
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                      color: context.isDarkMode ? Colors.black45 : Colors.black12,
+                      blurRadius: 10)
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _autocompleteSuggestions.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final suggestion = _autocompleteSuggestions[index];
+                    return ListTile(
+                      leading: Icon(Icons.location_on_outlined, color: context.primaryColor),
+                      title: Text(
+                        suggestion['description'] ?? '',
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
+                      onTap: () {
+                        FocusScope.of(context).unfocus();
+                        setState(() {
+                          _mapSearchController.text = suggestion['description'] ?? '';
+                          _autocompleteSuggestions = [];
+                        });
+                        _searchLocation(suggestion['description'] ?? '');
+                      },
+                    );
+                  },
+                ),
               ),
             ),
-            if (_mapSearchController.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    _mapSearchController.clear();
-                  });
-                },
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -600,7 +755,12 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
   Future<void> _searchLocation(String query) async {
     if (query.isEmpty) return;
 
-    setState(() => _isReverseGeocoding = true);
+    setState(() {
+      _isReverseGeocoding = true;
+      _autocompleteSuggestions = []; // Hide suggestions when searching
+    });
+    // Reset session token for the next search
+    _sessionToken = const Uuid().v4();
     try {
       List<geo.Location> locations = await geo.locationFromAddress(query);
       if (locations.isNotEmpty) {
@@ -657,8 +817,11 @@ class _MapAddressPickerScreenState extends State<MapAddressPickerScreen> {
                         color: context.primaryColor,
                       ),
                     )
-                  : Icon(Icons.my_location,
-                      color: context.primaryColor, size: 20.sp),
+                  : Icon(
+                      _isSystemLocationEnabled ? Icons.my_location : Icons.location_disabled,
+                      color: _isSystemLocationEnabled ? context.primaryColor : Colors.red, 
+                      size: 20.sp,
+                    ),
             ],
           ),
         ),

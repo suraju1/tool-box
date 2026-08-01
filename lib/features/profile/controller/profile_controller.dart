@@ -97,10 +97,8 @@ class ProfileController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Since ProfileService.fetchCollections doesn't take targetUserId yet, we should pass it
-    // Wait, let's look at ProfileService first. I didn't update fetchCollections there yet.
-    // For now I'll just leave this as is but add the param.
-    final response = await _profileService.fetchCollections();
+    // Pass targetUserId to fetchCollections so the backend knows which user to check for membership
+    final response = await _profileService.fetchCollections(targetUserId: targetUserId);
 
     if (response.success) {
       _collections = response.data ?? [];

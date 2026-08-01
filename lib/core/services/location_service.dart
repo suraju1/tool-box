@@ -48,18 +48,9 @@ class LocationService {
       // Get position
       debugPrint('Fetching position...');
 
-      // 1. Try last known position first (fastest)
-      Position? position = await Geolocator.getLastKnownPosition();
-
-      if (position != null) {
-        debugPrint(
-            'Last known position found: ${position.latitude}, ${position.longitude}');
-        return position;
-      }
-
-      // 2. Fallback to current position with timeout
-      debugPrint('No last known position. Fetching current position...');
-      position = await Geolocator.getCurrentPosition(
+      // Fetch current position for highest accuracy
+      debugPrint('Fetching fresh current position...');
+      Position? position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.best, // High accuracy for precision
         timeLimit: const Duration(seconds: 15),
       ).timeout(
@@ -267,5 +258,33 @@ class LocationService {
     }
 
     return null;
+  }
+
+  /// Get autocomplete suggestions for an address using Google Places API
+  static Future<List<Map<String, String>>> getAutocompleteSuggestions(String query, {String? sessionToken}) async {
+    if (query.isEmpty) return [];
+    try {
+      const apiKey = 'AIzaSyDcGPon7dpfONgGUw8lBMOXveihNhaepVo';
+      String url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$apiKey';
+      if (sessionToken != null && sessionToken.isNotEmpty) {
+        url += '&sessiontoken=$sessionToken';
+      }
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'OK' && data['predictions'] != null) {
+          final predictions = data['predictions'] as List;
+          return predictions.map((p) {
+            return {
+              'description': p['description'] as String,
+              'place_id': p['place_id'] as String,
+            };
+          }).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Autocomplete failed: $e');
+    }
+    return [];
   }
 }

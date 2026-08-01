@@ -33,7 +33,7 @@ class _SaveToCollectionBottomSheetState extends State<SaveToCollectionBottomShee
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileController>().getCollections();
+      context.read<ProfileController>().getCollections(targetUserId: widget.userId);
     });
   }
 
